@@ -2,7 +2,8 @@ import { state } from "./config.js";
 window.state = state;
 import { initHologram } from "./hologram.js";
 import { startCamera } from "./camera.js";
-import { initLanguageSelector, loadVoices } from "./language.js";
+import { setLanguage, initLanguageSelector, loadVoices } from "./language.js";
+window.setLanguage = setLanguage;
 // map.js o'rniga navigation.js dagi AirportNavigation ishlatiladi
 // window.airportNav = new AirportNavigation("map-canvas"); // Bu index.php da navigation.js yuklanganidan keyin amalga oshiriladi
 
@@ -202,42 +203,7 @@ window.initLegacyApp = () => {
     };
   }
 
-  // --- Boshlang'ich Til Tanlash Logikasi ---
-  const langModal = document.getElementById("lang-selection-modal");
-  if (langModal) {
-    const cards = langModal.querySelectorAll(".lang-card");
-    cards.forEach(card => {
-      card.onclick = () => {
-        const lang = card.dataset.lang;
-        console.log("[LANG] Selected:", lang);
-        
-        // Tanlangan tilni o'rnatish
-        state.language = lang;
-        localStorage.setItem("kiosk_lang", lang);
-        
-        // UI dagi dropdownni ham yangilab qo'yamiz (agar mavjud bo'lsa)
-        const dropdown = document.getElementById("lang-dropdown");
-        if (dropdown) {
-          const opt = Array.from(dropdown.querySelectorAll(".lang-option")).find(o => o.dataset.value === lang);
-          if (opt) opt.click();
-        }
-
-        // Modalni yopish
-        langModal.classList.add("hide");
-        
-        // Xush kelibsiz xabari (ovozsiz, faqat terminalda)
-        const terminal = document.getElementById("terminal-text");
-        if (terminal) {
-          const welcome = {
-            uz: "Xush kelibsiz! Qanday yordam bera olaman?",
-            ru: "Добро пожаловать! Чем я могу вам помочь?",
-            en: "Welcome! How can I help you?"
-          };
-          terminal.innerText = welcome[lang] || welcome.uz;
-        }
-      };
-    });
-  }
+  // --- Boshlang'ich Til Tanlash Logikasi (Vue tomonidan bajariladi) ---
 };
 
 // Auto-initialization Vue tomonidan Kiosk.vue da boshqariladi

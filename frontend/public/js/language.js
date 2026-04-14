@@ -122,54 +122,69 @@ export function pickVoice(language) {
   return best;
 }
 
+export function setLanguage(value) {
+  const dropdown = document.getElementById("lang-dropdown");
+  if (!dropdown) {
+    localStorage.setItem("kiosk_lang", value);
+    return;
+  }
+  
+  const options = dropdown.querySelectorAll(".lang-option");
+  const flagSlot = dropdown.querySelector(".lang-flag");
+  const labelSlot = dropdown.querySelector(".lang-label");
+
+  if (options && options.length > 0) {
+    const opt = Array.from(options).find((o) => o.dataset.value === value);
+    if (opt) {
+      dropdown.dataset.value = value;
+      if (labelSlot) labelSlot.textContent = opt.dataset.label || opt.textContent.trim();
+      const flag = opt.querySelector(".flag-icon");
+      if (flag && flagSlot) flagSlot.innerHTML = flag.innerHTML;
+      
+      options.forEach((o) =>
+        o.setAttribute("aria-selected", o === opt ? "true" : "false"),
+      );
+    }
+  }
+  
+  localStorage.setItem("kiosk_lang", value);
+}
+
 export function initLanguageSelector() {
   const dropdown = document.getElementById("lang-dropdown");
   if (!dropdown) return;
   const toggle = dropdown.querySelector(".lang-toggle");
   const options = dropdown.querySelectorAll(".lang-option");
-  const flagSlot = dropdown.querySelector(".lang-flag");
-  const labelSlot = dropdown.querySelector(".lang-label");
-
-  const selectValue = (value) => {
-    const opt = Array.from(options).find((o) => o.dataset.value === value);
-    if (!opt) return;
-    dropdown.dataset.value = value;
-    labelSlot.textContent = opt.dataset.label || opt.textContent.trim();
-    const flag = opt.querySelector(".flag-icon");
-    if (flag) flagSlot.innerHTML = flag.innerHTML;
-    options.forEach((o) =>
-      o.setAttribute("aria-selected", o === opt ? "true" : "false"),
-    );
-    localStorage.setItem("kiosk_lang", value);
-  };
 
   const saved = localStorage.getItem("kiosk_lang") || "auto";
-  selectValue(saved);
+  setLanguage(saved);
 
-  toggle.addEventListener("click", () => {
-    const isOpen = dropdown.classList.toggle("open");
-    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-  });
+  if (toggle) {
+    toggle.addEventListener("click", () => {
+      const isOpen = dropdown.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+  }
 
   options.forEach((opt) => {
     opt.addEventListener("click", () => {
-      selectValue(opt.dataset.value);
+      setLanguage(opt.dataset.value);
       dropdown.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
     });
   });
 
   document.addEventListener("click", (e) => {
     if (!dropdown.contains(e.target)) {
       dropdown.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
     }
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       dropdown.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
     }
   });
 }

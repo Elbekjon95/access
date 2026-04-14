@@ -7,6 +7,30 @@ onMounted(() => {
       window.initLegacyApp();
   }
 });
+
+const handleLangSelect = (lang) => {
+  console.log("[Vue LANG] Selected:", lang);
+  if (window.state) window.state.currentLanguage = lang;
+  if (typeof window.setLanguage === 'function') {
+      window.setLanguage(lang);
+  }
+  
+  // Modalni yopish
+  const modal = document.getElementById("lang-selection-modal");
+  if (modal) modal.classList.add("hide");
+  
+  // Terminal xabari
+  const terminal = document.getElementById("terminal-text");
+  if (terminal) {
+    const welcome = {
+      uz: "Xush kelibsiz! Qanday yordam bera olaman?",
+      ru: "Добро пожаловать! Чем я могу вам помочь?",
+      en: "Welcome! How can I help you?",
+      tr: "Hoş geldiniz! Size nasıl yardımcı olabilirim?"
+    };
+    terminal.innerText = welcome[lang] || welcome.uz;
+  }
+};
 </script>
 
 <template>
@@ -30,47 +54,32 @@ onMounted(() => {
           </button>
           <div class="lang-menu" role="listbox" aria-label="Tilni tanlash">
               <button type="button" class="lang-option" role="option" data-value="auto" data-label="Auto">
-                  <span class="flag-icon">
-                      <svg width="24" height="16" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="15" cy="10" r="9" fill="#0aa0ff" />
-                          <path d="M6 10h18M15 1v18M9 4c2 2 2 10 0 12M21 4c-2 2-2 10 0 12" stroke="#ffffff" stroke-width="1" />
-                      </svg>
-                  </span>
+                  <span class="flag-icon"><i class="fas fa-globe"></i></span>
                   <span>Auto</span>
               </button>
               <button type="button" class="lang-option" role="option" data-value="uz" data-label="O'zbek">
-                  <span class="flag-icon">
-                      <svg width="24" height="16" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
-                          <rect width="30" height="20" fill="#1eb6ff" />
-                          <rect y="7" width="30" height="6" fill="#ffffff" />
-                          <rect y="13" width="30" height="7" fill="#1eb53a" />
-                          <rect y="6.5" width="30" height="1" fill="#ce1126" />
-                          <rect y="12.5" width="30" height="1" fill="#ce1126" />
-                      </svg>
-                  </span>
+                  <span class="flag-icon"><img src="/img/flags/uz.svg" width="20"></span>
                   <span>O'zbek</span>
               </button>
               <button type="button" class="lang-option" role="option" data-value="ru" data-label="Русский">
-                  <span class="flag-icon">
-                      <svg width="24" height="16" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
-                          <rect width="30" height="20" fill="#ffffff" />
-                          <rect y="7" width="30" height="6" fill="#0039a6" />
-                          <rect y="13" width="30" height="7" fill="#d52b1e" />
-                      </svg>
-                  </span>
+                  <span class="flag-icon"><img src="/img/flags/ru.svg" width="20"></span>
                   <span>Русский</span>
               </button>
               <button type="button" class="lang-option" role="option" data-value="en" data-label="English">
-                  <span class="flag-icon">
-                      <svg width="24" height="16" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
-                          <rect width="30" height="20" fill="#012169" />
-                          <rect y="8" width="30" height="4" fill="#ffffff" />
-                          <rect x="13" width="4" height="20" fill="#ffffff" />
-                          <rect y="9" width="30" height="2" fill="#c8102e" />
-                          <rect x="14" width="2" height="20" fill="#c8102e" />
-                      </svg>
-                  </span>
+                  <span class="flag-icon"><img src="/img/flags/us.svg" width="20"></span>
                   <span>English</span>
+              </button>
+              <button type="button" class="lang-option" role="option" data-value="tr" data-label="Türkçe">
+                  <span class="flag-icon"><img src="/img/flags/tr.svg" width="20"></span>
+                  <span>Türkçe</span>
+              </button>
+              <button type="button" class="lang-option" role="option" data-value="ar" data-label="العربية">
+                  <span class="flag-icon"><img src="/img/flags/sa.svg" width="20"></span>
+                  <span>العربية</span>
+              </button>
+              <button type="button" class="lang-option" role="option" data-value="zh" data-label="中文">
+                  <span class="flag-icon"><img src="/img/flags/cn.svg" width="20"></span>
+                  <span>中文</span>
               </button>
           </div>
         </div>
@@ -239,29 +248,29 @@ onMounted(() => {
       </div>
       
       <div class="lang-grid">
-        <button class="lang-card" data-lang="uz"><div class="flag"><img src="/img/flags/uz.svg" width="60" alt="UZ"></div><div class="name">O'zbekcha</div><div class="desc">Asosiy menyu</div></button>
-        <button class="lang-card" data-lang="ru"><div class="flag"><img src="/img/flags/ru.svg" width="60" alt="RU"></div><div class="name">Русский</div><div class="desc">Основное menyu</div></button>
-        <button class="lang-card" data-lang="en"><div class="flag"><img src="/img/flags/us.svg" width="60" alt="US"></div><div class="name">English</div><div class="desc">Main Menu</div></button>
-        <button class="lang-card" data-lang="tr"><div class="flag"><img src="/img/flags/tr.svg" width="60" alt="TR"></div><div class="name">Türkçe</div><div class="desc">Ana Menü</div></button>
-        <button class="lang-card" data-lang="ar"><div class="flag"><img src="/img/flags/sa.svg" width="60" alt="SA"></div><div class="name">العربية</div><div class="desc">القائمة الرئيسية</div></button>
+        <button class="lang-card" @click="handleLangSelect('uz')"><div class="flag"><img src="/img/flags/uz.svg" width="60" alt="UZ"></div><div class="name">O'zbekcha</div><div class="desc">Asosiy menyu</div></button>
+        <button class="lang-card" @click="handleLangSelect('ru')"><div class="flag"><img src="/img/flags/ru.svg" width="60" alt="RU"></div><div class="name">Русский</div><div class="desc">Основное menyu</div></button>
+        <button class="lang-card" @click="handleLangSelect('en')"><div class="flag"><img src="/img/flags/us.svg" width="60" alt="US"></div><div class="name">English</div><div class="desc">Main Menu</div></button>
+        <button class="lang-card" @click="handleLangSelect('tr')"><div class="flag"><img src="/img/flags/tr.svg" width="60" alt="TR"></div><div class="name">Türkçe</div><div class="desc">Ana Menü</div></button>
+        <button class="lang-card" @click="handleLangSelect('ar')"><div class="flag"><img src="/img/flags/sa.svg" width="60" alt="SA"></div><div class="name">العربية</div><div class="desc">القائمة الرئيسية</div></button>
         
-        <button class="lang-card" data-lang="zh"><div class="flag"><img src="/img/flags/cn.svg" width="60" alt="CN"></div><div class="name">中文</div><div class="desc">主菜单</div></button>
-        <button class="lang-card" data-lang="ko"><div class="flag"><img src="/img/flags/kr.svg" width="60" alt="KR"></div><div class="name">한국어</div><div class="desc">메인 메뉴</div></button>
-        <button class="lang-card" data-lang="ja"><div class="flag"><img src="/img/flags/jp.svg" width="60" alt="JP"></div><div class="name">日本語</div><div class="desc">Main Menu</div></button>
-        <button class="lang-card" data-lang="de"><div class="flag"><img src="/img/flags/de.svg" width="60" alt="DE"></div><div class="name">Deutsch</div><div class="desc">Hauptmenü</div></button>
-        <button class="lang-card" data-lang="fr"><div class="flag"><img src="/img/flags/fr.svg" width="60" alt="FR"></div><div class="name">Français</div><div class="desc">Menu Principal</div></button>
+        <button class="lang-card" @click="handleLangSelect('zh')"><div class="flag"><img src="/img/flags/cn.svg" width="60" alt="CN"></div><div class="name">中文</div><div class="desc">主菜单</div></button>
+        <button class="lang-card" @click="handleLangSelect('ko')"><div class="flag"><img src="/img/flags/kr.svg" width="60" alt="KR"></div><div class="name">한국어</div><div class="desc">메인 메뉴</div></button>
+        <button class="lang-card" @click="handleLangSelect('ja')"><div class="flag"><img src="/img/flags/jp.svg" width="60" alt="JP"></div><div class="name">日本語</div><div class="desc">Main Menu</div></button>
+        <button class="lang-card" @click="handleLangSelect('de')"><div class="flag"><img src="/img/flags/de.svg" width="60" alt="DE"></div><div class="name">Deutsch</div><div class="desc">Hauptmenü</div></button>
+        <button class="lang-card" @click="handleLangSelect('fr')"><div class="flag"><img src="/img/flags/fr.svg" width="60" alt="FR"></div><div class="name">Français</div><div class="desc">Menu Principal</div></button>
         
-        <button class="lang-card" data-lang="es"><div class="flag"><img src="/img/flags/es.svg" width="60" alt="ES"></div><div class="name">Español</div><div class="desc">Menú Principal</div></button>
-        <button class="lang-card" data-lang="it"><div class="flag"><img src="/img/flags/it.svg" width="60" alt="IT"></div><div class="name">Italiano</div><div class="desc">Menu Principale</div></button>
-        <button class="lang-card" data-lang="pt"><div class="flag"><img src="/img/flags/pt.svg" width="60" alt="PT"></div><div class="name">Português</div><div class="desc">Menu Principal</div></button>
-        <button class="lang-card" data-lang="tg"><div class="flag"><img src="/img/flags/tj.svg" width="60" alt="TJ"></div><div class="name">Тоҷикӣ</div><div class="desc">Менюи асосӣ</div></button>
-        <button class="lang-card" data-lang="kk"><div class="flag"><img src="/img/flags/kz.svg" width="60" alt="KZ"></div><div class="name">Қазақша</div><div class="desc">Негізгі мәзір</div></button>
+        <button class="lang-card" @click="handleLangSelect('es')"><div class="flag"><img src="/img/flags/es.svg" width="60" alt="ES"></div><div class="name">Español</div><div class="desc">Menú Principal</div></button>
+        <button class="lang-card" @click="handleLangSelect('it')"><div class="flag"><img src="/img/flags/it.svg" width="60" alt="IT"></div><div class="name">Italiano</div><div class="desc">Menu Principale</div></button>
+        <button class="lang-card" @click="handleLangSelect('pt')"><div class="flag"><img src="/img/flags/pt.svg" width="60" alt="PT"></div><div class="name">Português</div><div class="desc">Menu Principal</div></button>
+        <button class="lang-card" @click="handleLangSelect('tg')"><div class="flag"><img src="/img/flags/tj.svg" width="60" alt="TJ"></div><div class="name">Тоҷикӣ</div><div class="desc">Менюи асосӣ</div></button>
+        <button class="lang-card" @click="handleLangSelect('kk')"><div class="flag"><img src="/img/flags/kz.svg" width="60" alt="KZ"></div><div class="name">Қазақша</div><div class="desc">Негізгі мәзір</div></button>
         
-        <button class="lang-card" data-lang="ky"><div class="flag"><img src="/img/flags/kg.svg" width="60" alt="KG"></div><div class="name">Кыргызcha</div><div class="desc">Башкы menyu</div></button>
-        <button class="lang-card" data-lang="tk"><div class="flag"><img src="/img/flags/tm.svg" width="60" alt="TM"></div><div class="name">Türkmençe</div><div class="desc">Esasy menýu</div></button>
-        <button class="lang-card" data-lang="hi"><div class="flag"><img src="/img/flags/in.svg" width="60" alt="IN"></div><div class="name">हिन्दी</div><div class="desc">Muxay Menyu</div></button>
-        <button class="lang-card" data-lang="ur"><div class="flag"><img src="/img/flags/pk.svg" width="60" alt="PK"></div><div class="name">اردو</div><div class="desc">مین mену</div></button>
-        <button class="lang-card" data-lang="az"><div class="flag"><img src="/img/flags/az.svg" width="60" alt="AZ"></div><div class="name">Azərbaycanca</div><div class="desc">Ana menyu</div></button>
+        <button class="lang-card" @click="handleLangSelect('ky')"><div class="flag"><img src="/img/flags/kg.svg" width="60" alt="KG"></div><div class="name">Кыргызcha</div><div class="desc">Башкы menyu</div></button>
+        <button class="lang-card" @click="handleLangSelect('tk')"><div class="flag"><img src="/img/flags/tm.svg" width="60" alt="TM"></div><div class="name">Türkmençe</div><div class="desc">Esasy menýu</div></button>
+        <button class="lang-card" @click="handleLangSelect('hi')"><div class="flag"><img src="/img/flags/in.svg" width="60" alt="IN"></div><div class="name">हिन्दी</div><div class="desc">Muxay Menyu</div></button>
+        <button class="lang-card" @click="handleLangSelect('ur')"><div class="flag"><img src="/img/flags/pk.svg" width="60" alt="PK"></div><div class="name">اردو</div><div class="desc">مین mену</div></button>
+        <button class="lang-card" @click="handleLangSelect('az')"><div class="flag"><img src="/img/flags/az.svg" width="60" alt="AZ"></div><div class="name">Azərbaycanca</div><div class="desc">Ana menyu</div></button>
       </div>
     </div>
   </div>
