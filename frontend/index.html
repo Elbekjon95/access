@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACCSESS - Aerovokzal Ma'lumot Kioski</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/earth.js"></script>
+    <script>
+        window.NAV_LINE_WIDTH = 6;
+        window.NAV_LINE_GLOW = 1;
+        window.NAV_LINE_DASH = false;
+        window.NAV_LINE_COLOR = "#ff3b30";
+        window.NAV_CAMERA_FOLLOW = true;
+        window.NAV_CAMERA_ZOOM = 1.7;
+    </script>
+    <script src="/navigation.js"></script>
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
