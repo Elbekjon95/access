@@ -128,7 +128,7 @@ export async function loadFlightsToTable(filterType = "departure") {
   try {
     let flights = cachedFlightsData;
     if (!flights) {
-      const response = await fetch("api/flights.php");
+      const response = await fetch("api/flights");
       flights = await response.json();
       cachedFlightsData = flights;
     }

@@ -34,3 +34,6 @@ backend/uploads/*
 # Misc
 backend/scratch/
 database_pg.sql
+project.tar
+scratch/
+

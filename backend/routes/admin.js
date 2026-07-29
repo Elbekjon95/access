@@ -1,7 +1,13 @@
 import express from 'express';
-import db from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+
+import User from '../models/User.js';
+import Map from '../models/Map.js';
+import MapPoint from '../models/MapPoint.js';
+import MapBarrier from '../models/MapBarrier.js';
+import Chat from '../models/Chat.js';
+import Complaint from '../models/Complaint.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'acsess_secret_key_2024';
@@ -10,14 +16,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'acsess_secret_key_2024';
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const { rows } = await db.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (rows.length === 0) {
+        const user = await User.findOne({ username });
+        if (!user) {
             return res.status(401).json({ error: 'Foydalanuvchi topilmadi' });
         }
 
-        const user = rows[0];
         const match = await bcrypt.compare(password, user.password);
-        
         if (!match) {
             return res.status(401).json({ error: 'Parol noto\'g\'ri' });
         }
@@ -59,26 +63,32 @@ const authenticateToken = (req, res, next) => {
 // Dashboard Statistika API
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
-        const chatStats = await db.query('SELECT COUNT(*) as total FROM chats');
-        const complaintStats = await db.query('SELECT COUNT(*) as total FROM complaints WHERE status = \'new\'');
-        const userStats = await db.query('SELECT COUNT(*) as total FROM users');
-        const recentChats = await db.query('SELECT * FROM chats ORDER BY created_at DESC LIMIT 5');
-        
-        // Oxirgi 7 kunlik statistika (Infografika uchun)
-        const dailyStats = await db.query(`
-            SELECT TO_CHAR(created_at, 'DD.MM') as date, COUNT(*) as count 
-            FROM chats 
-            WHERE created_at > CURRENT_DATE - INTERVAL '7 days' 
-            GROUP BY date, created_at 
-            ORDER BY created_at ASC
-        `);
-        
+        const total_chats = await Chat.countDocuments();
+        const new_complaints = await Complaint.countDocuments({ status: 'new' });
+        const total_users = await User.countDocuments();
+        const recentChats = await Chat.find().sort({ created_at: -1 }).limit(5);
+
+        // Oxirgi 7 kunlik statistika
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const dailyStats = await Chat.aggregate([
+            { $match: { created_at: { $gte: sevenDaysAgo } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%d.%m", date: "$created_at" } },
+                    count: { $sum: 1 },
+                    firstDate: { $min: "$created_at" }
+                }
+            },
+            { $sort: { firstDate: 1 } },
+            { $project: { _id: 0, date: "$_id", count: 1 } }
+        ]);
+
         res.json({
-            total_chats: parseInt(chatStats.rows[0].total),
-            new_complaints: parseInt(complaintStats.rows[0].total),
-            total_users: parseInt(userStats.rows[0].total),
-            recent_chats: recentChats.rows,
-            daily_stats: dailyStats.rows
+            total_chats,
+            new_complaints,
+            total_users,
+            recent_chats: recentChats,
+            daily_stats: dailyStats
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -90,8 +100,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
 // Barcha foydalanuvchilarni olish
 router.get('/users', authenticateToken, async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT id, username, full_name, role, created_at FROM users ORDER BY id ASC');
-        res.json(rows);
+        const users = await User.find().select('-password').sort({ created_at: 1 });
+        res.json(users);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -100,10 +110,9 @@ router.get('/users', authenticateToken, async (req, res) => {
 // Yangi admin qo'shish (Bootstrap rejimi bilan)
 router.post('/users', async (req, res, next) => {
     try {
-        const { rows: countRows } = await db.query('SELECT COUNT(*) as total FROM users');
-        const userCount = parseInt(countRows[0].total);
+        const userCount = await User.countDocuments();
         
-        // Agar bazada user bo'lsa, tokenni tekshiramiz. Agar bo'lmasa (bootstrap), o'tkazib yuboramiz.
+        // Agar bazada user bo'lsa, tokenni tekshiramiz.
         if (userCount > 0) {
             return authenticateToken(req, res, next);
         }
@@ -115,11 +124,13 @@ router.post('/users', async (req, res, next) => {
     const { username, password, full_name, role = 'admin' } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const { rows } = await db.query(
-            'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id',
-            [username, hashedPassword, full_name, role]
-        );
-        res.json({ success: true, id: rows[0].id });
+        const newUser = await User.create({
+            username,
+            password: hashedPassword,
+            full_name,
+            role
+        });
+        res.json({ success: true, id: newUser.id });
     } catch (e) {
         console.error('[Admin Register Error]:', e.message);
         res.status(500).json({ error: e.message });
@@ -130,12 +141,11 @@ router.post('/users', async (req, res, next) => {
 router.delete('/users/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        // Asosiy adminni o'chirib bo'lmaydi (username: admin)
-        const check = await db.query('SELECT username FROM users WHERE id = $1', [id]);
-        if (check.rows.length && check.rows[0].username === 'admin') {
+        const user = await User.findById(id);
+        if (user && (user.username === 'admin' || user.username === 'tasffxh')) {
             return res.status(403).json({ error: 'Asosiy adminni o\'chirib bo\'lmaydi' });
         }
-        await db.query('DELETE FROM users WHERE id = $1', [id]);
+        await User.findByIdAndDelete(id);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -146,8 +156,8 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
 
 router.get('/chats', authenticateToken, async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT * FROM chats ORDER BY created_at DESC');
-        res.json(rows);
+        const chats = await Chat.find().sort({ created_at: -1 });
+        res.json(chats);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -155,8 +165,8 @@ router.get('/chats', authenticateToken, async (req, res) => {
 
 router.get('/complaints', authenticateToken, async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT * FROM complaints ORDER BY created_at DESC');
-        res.json(rows);
+        const complaints = await Complaint.find().sort({ created_at: -1 });
+        res.json(complaints);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -167,19 +177,19 @@ router.post('/complaints/:id/status', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     try {
-        await db.query('UPDATE complaints SET status = $1 WHERE id = $2', [status, id]);
+        await Complaint.findByIdAndUpdate(id, { status });
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-// --- Map Editor APIs (Original) ---
+// --- Map Editor APIs ---
 
 router.get('/map/points', authenticateToken, async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT * FROM map_points ORDER BY id ASC');
-        res.json(rows);
+        const points = await MapPoint.find().sort({ created_at: 1 });
+        res.json(points);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -189,17 +199,11 @@ router.post('/map/points', authenticateToken, async (req, res) => {
     const { id, name, type, pos_x, pos_y, map_id = 1 } = req.body;
     try {
         if (id) {
-            await db.query(
-                'UPDATE map_points SET name = $1, type = $2, pos_x = $3, pos_y = $4 WHERE id = $5',
-                [name, type, pos_x, pos_y, id]
-            );
+            await MapPoint.findByIdAndUpdate(id, { name, type, pos_x, pos_y });
             res.json({ success: true, id });
         } else {
-            const { rows } = await db.query(
-                'INSERT INTO map_points (map_id, name, type, pos_x, pos_y) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-                [map_id, name, type, pos_x, pos_y]
-            );
-            res.json({ success: true, id: rows[0].id });
+            const newPoint = await MapPoint.create({ map_id, name, type, pos_x, pos_y });
+            res.json({ success: true, id: newPoint.id });
         }
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -209,7 +213,7 @@ router.post('/map/points', authenticateToken, async (req, res) => {
 router.delete('/map/points/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query('DELETE FROM map_points WHERE id = $1', [id]);
+        await MapPoint.findByIdAndDelete(id);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -218,8 +222,8 @@ router.delete('/map/points/:id', authenticateToken, async (req, res) => {
 
 router.get('/map/barriers', authenticateToken, async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT * FROM map_barriers ORDER BY id ASC');
-        res.json(rows);
+        const barriers = await MapBarrier.find().sort({ created_at: 1 });
+        res.json(barriers);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -228,11 +232,9 @@ router.get('/map/barriers', authenticateToken, async (req, res) => {
 router.post('/map/barriers', authenticateToken, async (req, res) => {
     const { barrier_data, map_id = 1 } = req.body;
     try {
-        const { rows } = await db.query(
-            'INSERT INTO map_barriers (map_id, barrier_data) VALUES ($1, $2) RETURNING id',
-            [map_id, typeof barrier_data === 'string' ? barrier_data : JSON.stringify(barrier_data)]
-        );
-        res.json({ success: true, id: rows[0].id });
+        const barrierDataObj = typeof barrier_data === 'string' ? JSON.parse(barrier_data) : barrier_data;
+        const newBarrier = await MapBarrier.create({ map_id, barrier_data: barrierDataObj });
+        res.json({ success: true, id: newBarrier.id });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -241,7 +243,7 @@ router.post('/map/barriers', authenticateToken, async (req, res) => {
 router.delete('/map/barriers/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query('DELETE FROM map_barriers WHERE id = $1', [id]);
+        await MapBarrier.findByIdAndDelete(id);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -99,7 +99,7 @@ class AirportNavigation {
     };
     try {
       const apiBase = (window.location.pathname.includes("/admin/")) ? "../" : "";
-      const res = await fetch(`${apiBase}api/barriers.php`);
+      const res = await fetch(`${apiBase}api/barriers`);
       this.barriers = await res.json();
       this.updateCollisionGrid();
     } catch (e) {
@@ -399,36 +399,64 @@ class AirportNavigation {
     this.ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
     this.ctx.drawImage(this.backgroundImage, 0, 0);
 
-    // Markerlarni chizish (Yaxshilangan dizayn)
+    // Markerlarni chizish (Logotiplar va Ikonkalar bilan)
+    const iconMap = {
+        'cafe': '\uf2e7',
+        'restaurant': '\uf2e7',
+        'toilet': '\uf7bd',
+        'mosque': '\uf66d',
+        'vip': '\uf005',
+        'cip': '\uf005',
+        'info': '\uf05a',
+        'gate': '\uf5b0',
+        'fids': '\uf072',
+        'counter': '\uf48b',
+        'entrance': '\uf52b',
+        'exit': '\uf52a',
+        'reception': '\uf590'
+    };
+
     this.nodes.forEach(n => {
-        if (n.type === 'kiosk_start') {
-            // Kiosk o'zi uchun maxsus marker
+        const isKiosk = n.type === 'kiosk_start' || n.name === 'kiosk_start';
+        
+        if (isKiosk) {
+            // Kiosk marker (Sariq nuqta)
             this.ctx.fillStyle = "#ffcc00";
             this.ctx.beginPath();
-            this.ctx.arc(n.pos_x, n.pos_y, 4 * this.pxScale, 0, Math.PI * 2);
+            this.ctx.arc(n.pos_x, n.pos_y, 5 * this.pxScale, 0, Math.PI * 2);
             this.ctx.fill();
+            this.ctx.shadowBlur = 10 * this.pxScale;
+            this.ctx.shadowColor = "#ffcc00";
             this.ctx.strokeStyle = "white";
             this.ctx.lineWidth = 1 * this.pxScale;
             this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
             return;
         }
         
-        // Oddiy nuqtalar
-        this.ctx.fillStyle = "rgba(0, 198, 255, 0.6)";
-        this.ctx.beginPath();
-        this.ctx.arc(n.pos_x, n.pos_y, 3 * this.pxScale, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.strokeStyle = "rgba(255,255,255,0.4)";
-        this.ctx.lineWidth = 0.5 * this.pxScale;
-        this.ctx.stroke();
+        // Ikonka yoki logotipni aniqlash
+        const iconChar = iconMap[n.type] || '\uf111'; // Standart nuqta
+        const iconColor = n.type ? "#00c6ff" : "rgba(255,255,255,0.5)";
 
-        // Labelni faqat zoom baland bo'lganda yoki nuqta juda kam bo'lganda ko'rsatish
-        if (scale > 1.2) {
-            this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-            this.ctx.font = `italic ${Math.round(8 * this.pxScale)}px Outfit`;
+        // Fon doirasi (subtle glow)
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.arc(n.pos_x, n.pos_y, 10 * this.pxScale, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Ikonkani chizish (FontAwesome)
+        this.ctx.fillStyle = iconColor;
+        this.ctx.font = `900 ${Math.round(12 * this.pxScale)}px "Font Awesome 6 Free"`;
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        this.ctx.fillText(iconChar, n.pos_x, n.pos_y);
+
+        // Label (Agar zoom bo'lsa)
+        if (scale > 1.3) {
+            this.ctx.fillStyle = "white";
+            this.ctx.font = `600 ${Math.round(8 * this.pxScale)}px Outfit`;
             this.ctx.textAlign = "center";
-            this.ctx.fillText(n.name, n.pos_x, n.pos_y - 6 * this.pxScale);
+            this.ctx.fillText(n.name, n.pos_x, n.pos_y + 18 * this.pxScale);
         }
     });
 

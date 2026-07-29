@@ -263,7 +263,7 @@ export function fallbackSpeech(text, language = "uz") {
 
 export async function speakGemini(text, voiceName = "Aoede") {
   try {
-    const response = await fetch("api/gemini_voice.php", {
+    const response = await fetch("api/gemini_voice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text, voice_name: voiceName }),
@@ -300,7 +300,7 @@ export function speakGeminiStream(text, voiceName = "Aoede") {
     // Fetch-based SSE (POST so'rovni qo'llab-quvvatlaydi)
     async function startStream() {
       try {
-        const response = await fetch("api/gemini_stream_tts.php", {
+        const response = await fetch("api/gemini_stream_tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text, voice_name: voiceName }),
@@ -623,7 +623,7 @@ async function onRecordingStop() {
   if (assistantTextElement)
     assistantTextElement.innerText = "Tahlil qilyapman...";
   try {
-    const response = await fetch("api/stt.php", {
+    const response = await fetch("api/stt", {
       method: "POST",
       body: formData,
     });

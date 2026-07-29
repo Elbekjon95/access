@@ -25,7 +25,7 @@ console.table(IFLYTEK_VOICES);
 console.log("💡 Eslatma: O'zbek tili 'mts' engine orqali 'Multilingual' ovozlar bilan eng yaxshi ishlaydi.");
 
 async function getAuthData() {
-    const res = await fetch("api/iflytek_auth.php?type=tts");
+    const res = await fetch("api/iflytek_auth?type=tts");
     return await res.json();
 }
 

@@ -1095,7 +1095,7 @@ async function getAirportCoords(codes) {
     const bases = getBaseCandidates();
     for (const base of bases) {
       try {
-        const res = await fetch(joinBasePath(base, "api/airport_coords.php"), {
+        const res = await fetch(joinBasePath(base, "api/airport_coords"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ codes: missing }),

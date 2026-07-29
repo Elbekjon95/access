@@ -25,6 +25,20 @@ import {
 } from "./voice.js?v=2";
 import { initWeather } from "./weather.js";
 
+window.showModal = showModal;
+window.hideModal = hideModal;
+window.loadFlightsToTable = loadFlightsToTable;
+window.initFlightsTabs = initFlightsTabs;
+window.setComplaintStatus = setComplaintStatus;
+window.resetComplaintPreview = resetComplaintPreview;
+window.startRecording = startRecording;
+window.stopRecording = stopRecording;
+window.stopAssistantVoice = stopAssistantVoice;
+window.toggleAssistantVoice = toggleAssistantVoice;
+window.startComplaintRecording = startComplaintRecording;
+window.stopComplaintRecording = stopComplaintRecording;
+window.initWeather = initWeather;
+
 const mapViewState = {
   scale: 1,
   panX: 0,

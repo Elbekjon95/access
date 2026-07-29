@@ -1,11 +1,6 @@
 import express from 'express';
+import db from '../config/db.js';
 import axios from 'axios';
-import Chat from '../models/Chat.js';
-import Map from '../models/Map.js';
-import MapPoint from '../models/MapPoint.js';
-import MapBarrier from '../models/MapBarrier.js';
-import CustomerCapture from '../models/CustomerCapture.js';
-import Complaint from '../models/Complaint.js';
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
@@ -188,11 +183,10 @@ ${JSON.stringify(shortFlights)}`;
             
             // Chatni bazaga saqlash
             try {
-                await Chat.create({
-                    user_message: message,
-                    ai_response: parsed.reply,
-                    language: language || 'uz'
-                });
+                await db.query(
+                    'INSERT INTO chats (user_message, ai_response, language) VALUES ($1, $2, $3)',
+                    [message, parsed.reply, language || 'uz']
+                );
             } catch (dbErr) {
                 console.error('Chatni bazaga saqlashda xato:', dbErr.message);
             }
@@ -221,8 +215,8 @@ router.get(['/flights.php', '/flights'], async (req, res) => {
 // Missing Map endpoints
 router.get(['/map_settings.php', '/map_settings'], async (req, res) => {
     try {
-        const mapDoc = await Map.findOne();
-        res.json({ path: mapDoc ? mapDoc.image_path : 'img/airport_map.jpg' });
+        const { rows } = await db.query("SELECT image_path FROM maps LIMIT 1");
+        res.json({ path: rows.length ? rows[0].image_path : 'img/airport_map.jpg' });
     } catch(err) {
         res.json({ path: 'img/airport_map.jpg' });
     }
@@ -230,8 +224,8 @@ router.get(['/map_settings.php', '/map_settings'], async (req, res) => {
 
 router.get(['/scanner.php', '/scanner'], async (req, res) => {
     try {
-        const points = await MapPoint.find();
-        res.json(points);
+        const { rows } = await db.query("SELECT name, type, pos_x, pos_y FROM map_points");
+        res.json(rows);
     } catch(err) {
         res.json([]);
     }
@@ -239,7 +233,7 @@ router.get(['/scanner.php', '/scanner'], async (req, res) => {
 
 router.get(['/barriers.php', '/barriers'], async (req, res) => {
     try {
-        const rows = await MapBarrier.find();
+        const { rows } = await db.query("SELECT id, barrier_data FROM map_barriers");
         const barriers = rows.map(b => ({
             id: b.id,
             barrier_data: typeof b.barrier_data === 'string' ? JSON.parse(b.barrier_data) : b.barrier_data
@@ -365,6 +359,23 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         }
         console.error("Gemini STT Error: ", err.response?.data || err.message);
         res.json({ error: 'Gemini STT xizmatida xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.' });
+    }
+});
+
+router.post(['/complaint.php', '/complaint'], upload.single('audio'), async (req, res) => {
+    try {
+        const { name, contact } = req.body;
+        const audioPath = req.file ? req.file.path : null;
+
+        await db.query(
+            'INSERT INTO complaints (name, contact, audio_path, status) VALUES ($1, $2, $3, $4)',
+            [name, contact, audioPath, 'new']
+        );
+
+        res.json({ success: true, message: 'Shikoyat muvaffaqiyatli yuborildi' });
+    } catch (e) {
+        console.error("[COMPLAINT] Error:", e);
+        res.status(500).json({ error: 'Ichki xatolik yuz berdi' });
     }
 });
 

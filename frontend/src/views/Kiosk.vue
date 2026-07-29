@@ -6,29 +6,70 @@ onMounted(() => {
   if (typeof window.initLegacyApp === 'function') {
       window.initLegacyApp();
   }
+  if (typeof window.initWeather === 'function') {
+      window.initWeather();
+  }
+  if (typeof window.initFlightsTabs === 'function') {
+      window.initFlightsTabs();
+  }
 });
 
 const handleLangSelect = (lang) => {
-  console.log("[Vue LANG] Selected:", lang);
   if (window.state) window.state.currentLanguage = lang;
   if (typeof window.setLanguage === 'function') {
       window.setLanguage(lang);
   }
-  
-  // Modalni yopish
   const modal = document.getElementById("lang-selection-modal");
   if (modal) modal.classList.add("hide");
-  
-  // Terminal xabari
-  const terminal = document.getElementById("terminal-text");
-  if (terminal) {
-    const welcome = {
-      uz: "Xush kelibsiz! Qanday yordam bera olaman?",
-      ru: "Добро пожаловать! Чем я могу вам помочь?",
-      en: "Welcome! How can I help you?",
-      tr: "Hoş geldiniz! Size nasıl yardımcı olabilirim?"
-    };
-    terminal.innerText = welcome[lang] || welcome.uz;
+};
+
+const handleMap = () => {
+  if (typeof window.showModal === 'function') {
+    window.showModal("map-modal");
+  }
+};
+
+const handleFlights = () => {
+  if (typeof window.loadFlightsToTable === 'function') {
+    window.loadFlightsToTable();
+  }
+  if (typeof window.showModal === 'function') {
+    window.showModal("flights-modal");
+  }
+};
+
+const handleVoice = () => {
+  if (window.state && typeof window.startRecording === 'function' && typeof window.stopRecording === 'function') {
+    window.state.isRecording ? window.stopRecording() : window.startRecording();
+  }
+};
+
+const handleComplaint = () => {
+  if (typeof window.showModal === 'function') {
+    window.showModal("complaint-modal");
+  }
+  if (typeof window.resetComplaintPreview === 'function') {
+    window.resetComplaintPreview();
+  }
+  if (typeof window.setComplaintStatus === 'function') {
+    window.setComplaintStatus("Yozuv tugagach shikoyat avtomatik yuboriladi.");
+  }
+};
+
+const handleComplaintRecord = () => {
+  if (window.state && typeof window.startComplaintRecording === 'function' && typeof window.stopComplaintRecording === 'function') {
+    window.state.isComplaintRecording ? window.stopComplaintRecording() : window.startComplaintRecording();
+  }
+};
+
+const handleVoiceStop = () => { if (typeof window.stopAssistantVoice === 'function') window.stopAssistantVoice(); };
+const handleVoicePause = () => { if (typeof window.toggleAssistantVoice === 'function') window.toggleAssistantVoice(); };
+const handleCall = () => { alert("Operatorga qo'ng'iroq: +998 78 140-28-77\n(Kanselyariya)"); };
+const handleWeather = () => { if (typeof window.showModal === 'function') window.showModal("weather-modal"); };
+const hideModal = (e) => {
+  const modal = e.target.closest(".modal");
+  if (modal && typeof window.hideModal === 'function') {
+    window.hideModal(modal);
   }
 };
 </script>
@@ -40,7 +81,7 @@ const handleLangSelect = (lang) => {
     <header>
       <div class="logo-text">ACCESS</div>
       <div id="status-bar">
-        <button id="weather-temp-btn" class="weather-temp-btn">
+        <button id="weather-temp-btn" class="weather-temp-btn" @click="handleWeather">
           <i class="fas fa-cloud-sun"></i>
           <span id="toshkent-temp">--°C</span>
         </button>
@@ -105,17 +146,17 @@ const handleLangSelect = (lang) => {
     </section>
 
     <nav id="bottom-nav">
-      <button id="btn-map" class="nav-btn">Harita</button>
-      <button id="btn-call" class="nav-btn" title="Operatorga qo'ng'iroq"><i class="fas fa-phone-alt"></i></button>
+      <button id="btn-map" class="nav-btn" @click="handleMap">Harita</button>
+      <button id="btn-call" class="nav-btn" title="Operatorga qo'ng'iroq" @click="handleCall"><i class="fas fa-phone-alt"></i></button>
       <div class="voice-controls">
-        <button id="btn-pause-voice" class="action-btn" title="Pause/Resume"><i class="fas fa-pause"></i></button>
-        <button id="btn-voice" class="nav-btn mic-btn pulsing">
+        <button id="btn-pause-voice" class="action-btn" title="Pause/Resume" @click="handleVoicePause"><i class="fas fa-pause"></i></button>
+        <button id="btn-voice" class="nav-btn mic-btn pulsing" @click="handleVoice">
           <i class="fas fa-microphone"></i>
         </button>
-        <button id="btn-stop-voice" class="action-btn" title="Stop"><i class="fas fa-stop"></i></button>
+        <button id="btn-stop-voice" class="action-btn" title="Stop" @click="handleVoiceStop"><i class="fas fa-stop"></i></button>
       </div>
-      <button id="btn-flights" class="nav-btn">Reyslar</button>
-      <button id="btn-complaint" class="nav-btn" style="background: rgba(255,82,82,0.2); border-color: #ff5252;">E'tiroz va taklif</button>
+      <button id="btn-flights" class="nav-btn" @click="handleFlights">Reyslar</button>
+      <button id="btn-complaint" class="nav-btn" style="background: rgba(255,82,82,0.2); border-color: #ff5252;" @click="handleComplaint">E'tiroz va taklif</button>
     </nav>
   </main>
 
@@ -134,7 +175,7 @@ const handleLangSelect = (lang) => {
         <h3>Aerovokzal Haritasi</h3>
       </header>
       
-      <button class="close-modal" id="map-close-btn">&times;</button>
+      <button class="close-modal" id="map-close-btn" @click="hideModal">&times;</button>
       
       <!-- Chap panel: Xizmatlar -->
       <aside class="map-side-panel left">
@@ -163,7 +204,7 @@ const handleLangSelect = (lang) => {
     <div class="modal-content glass">
       <header>
         <h3>Joriy reyslar jadvali</h3>
-        <button class="close-modal">&times;</button>
+        <button class="close-modal" @click="hideModal">&times;</button>
       </header>
       <div id="flights-table-container">
         <div class="flights-tabs">
@@ -188,7 +229,7 @@ const handleLangSelect = (lang) => {
     <div class="modal-content glass" style="max-width: 95vw; max-height: 95vh; padding: 0; display: flex; flex-direction: column;">
       <header style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
         <h3 style="margin: 0;">🌍 Reys yo'nalishi</h3>
-        <button class="close-modal">&times;</button>
+        <button class="close-modal" @click="hideModal">&times;</button>
       </header>
       <div style="display: flex; flex: 1; overflow: hidden;">
         <div id="earth-container" style="flex: 1; position: relative; min-width: 60%;"></div>
@@ -209,12 +250,12 @@ const handleLangSelect = (lang) => {
     <div class="modal-content glass" style="max-width: 500px; height: auto;">
       <header>
         <h3>Shikoyat yoki Taklif</h3>
-        <button class="close-modal">&times;</button>
+        <button class="close-modal" @click="hideModal">&times;</button>
       </header>
       <div style="padding: 1rem;">
         <input type="text" id="comp-name" placeholder="Ismingiz" class="nav-btn" style="width: 100%; margin-bottom: 1rem; text-align: left;">
         <input type="text" id="comp-contact" placeholder="Telefon yoki Email" class="nav-btn" style="width: 100%; margin-bottom: 1rem; text-align: left;">
-        <button id="btn-complaint-record" class="nav-btn" style="width: 100%; background: var(--secondary-blue); margin-bottom: 0.8rem;">OVOZLI SHIKOYATNI BOSHLASH</button>
+        <button id="btn-complaint-record" class="nav-btn" style="width: 100%; background: var(--secondary-blue); margin-bottom: 0.8rem;" @click="handleComplaintRecord">OVOZLI SHIKOYATNI BOSHLASH</button>
         <div id="complaint-status" style="font-size: 0.9rem; opacity: 0.85; margin-bottom: 0.8rem;">Yozuv tugagach shikoyat avtomatik yuboriladi.</div>
         <audio id="complaint-audio-preview" controls style="width: 100%; display: none;"></audio>
       </div>
@@ -225,7 +266,7 @@ const handleLangSelect = (lang) => {
     <div class="modal-content glass" style="max-width: 800px; height: 80vh;">
       <header>
         <h3>🌍 Manzil Shaharlar Ob-havosi</h3>
-        <button class="close-modal">&times;</button>
+        <button class="close-modal" @click="hideModal">&times;</button>
       </header>
       <div id="weather-grid" class="weather-grid" style="flex: 1; overflow-y: auto; padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
         <div class="loader-container" style="grid-column: 1/-1; text-align: center; padding: 3rem;">

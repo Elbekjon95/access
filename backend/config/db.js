@@ -1,16 +1,17 @@
-import pg from 'pg';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const { Pool } = pg;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/acsess4';
 
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'acsess',
-    password: process.env.DB_PASS || 'postgres',
-    port: parseInt(process.env.DB_PORT) || 5432,
-});
+export const connectDB = async () => {
+    try {
+        const conn = await mongoose.connect(MONGODB_URI);
+        console.log(`[MongoDB] Muvaffaqiyatli ulandi: ${conn.connection.host}`);
+    } catch (error) {
+        console.error(`[MongoDB Xato] Ulanishda xatolik: ${error.message}`);
+        process.exit(1);
+    }
+};
 
-export const query = (text, params) => pool.query(text, params);
-export default pool;
+export default mongoose;

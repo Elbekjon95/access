@@ -1,0 +1,33 @@
+{
+  "maps": [
+    {
+      "id": 1,
+      "floor_name": "Aerovokzal",
+      "image_path": "/img/airport_map.jpg",
+      "width": 1000,
+      "height": 1000
+    }
+  ],
+  "points": [
+    { "name": "kiosk_start", "type": "kiosk_start", "pos_x": 7033.6, "pos_y": 9142.9 },
+    { "name": "1-10 stoykalar", "type": "counter", "pos_x": 7321.2, "pos_y": 7672.2 },
+    { "name": "11-20 stoykalar", "type": "counter", "pos_x": 7996.2, "pos_y": 7674.7 },
+    { "name": "21-30 stoykalar", "type": "counter", "pos_x": 8922.0, "pos_y": 7640.8 },
+    { "name": "31-40 stoykalar", "type": "counter", "pos_x": 9544.2, "pos_y": 7659.1 },
+    { "name": "CIP zone", "type": "cip", "pos_x": 10290.0, "pos_y": 7738.0 },
+    { "name": "VIP zone", "type": "vip", "pos_x": 10800.0, "pos_y": 8334.7 },
+    { "name": "Anor", "type": "restaurant", "pos_x": 10001.6, "pos_y": 6241.3 },
+    { "name": "Anjir", "type": "cafe", "pos_x": 5891.6, "pos_y": 6201.3 },
+    { "name": "Duty Free", "type": "shop", "pos_x": 8881.6, "pos_y": 5603.0 },
+    { "name": "Kafe", "type": "cafe", "pos_x": 9671.6, "pos_y": 6103.0 },
+    { "name": "Restoran", "type": "restaurant", "pos_x": 9981.6, "pos_y": 5703.0 },
+    { "name": "Hojatxona", "type": "toilet", "pos_x": 7500, "pos_y": 8500 },
+    { "name": "Namozxona", "type": "mosque", "pos_x": 6500, "pos_y": 8500 }
+  ],
+  "barriers": [
+    { "id": 1, "map_id": 1, "barrier_data": "[{\"x\":8120.1,\"y\":7470.3},{\"x\":8038.7,\"y\":7466.0},{\"x\":8021.5,\"y\":7827.4},{\"x\":8120.1,\"y\":7826.0}]" },
+    { "id": 2, "map_id": 1, "barrier_data": "[{\"x\":7189.9,\"y\":7465.7},{\"x\":7285.9,\"y\":7468.3},{\"x\":7288.6,\"y\":7829.7},{\"x\":7191.3,\"y\":7823.0}]" },
+    { "id": 4, "map_id": 1, "barrier_data": "[{\"x\":8792.8,\"y\":7446.4},{\"x\":8880.8,\"y\":7448.4},{\"x\":8886.8,\"y\":7788.4},{\"x\":8790.8,\"y\":7792.4}]" },
+    { "id": 5, "map_id": 1, "barrier_data": "[{\"x\":9582.4,\"y\":7460.8},{\"x\":9675.3,\"y\":7458.0},{\"x\":9676.7,\"y\":7808.0},{\"x\":9573.9,\"y\":7813.7}]" }
+  ]
+}
