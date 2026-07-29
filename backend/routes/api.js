@@ -330,29 +330,57 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const base64Audio = audioBuffer.toString('base64');
         const langCode = req.body.language || 'uz';
 
-        const sttModel = process.env.GEMINI_STT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${sttModel}:generateContent?key=${apiKey}`;
-        const mimeType = req.file.mimetype || "audio/webm";
-        
-        const payload = {
-            contents: [{
-                parts: [
-                    { text: `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.` },
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Audio
-                        }
-                    }
-                ]
-            }],
-            generationConfig: {
-                temperature: 0.1 // Aniq transkripsiya uchun past harorat
-            }
-        };
+        let mimeType = (req.file.mimetype || "audio/webm").split(';')[0].trim();
+        if (mimeType === 'application/octet-stream' || !mimeType) {
+            mimeType = 'audio/webm';
+        }
 
-        const { data } = await axios.post(url, payload);
+        const modelsToTry = [
+            process.env.GEMINI_STT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+            'gemini-1.5-flash',
+            'gemini-2.0-flash'
+        ];
+
+        // Takrorlanuvchi modellar ro'yxatini tozalash
+        const uniqueModels = [...new Set(modelsToTry)];
+        let data = null;
+        let lastError = null;
+
+        for (const model of uniqueModels) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.` },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Audio
+                                }
+                            }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1
+                    }
+                };
+
+                const resObj = await axios.post(url, payload);
+                data = resObj.data;
+                console.log(`[Gemini STT] Success with model: ${model}`);
+                break;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[Gemini STT] Model ${model} failed, trying next... Error:`, err.response?.data || err.message);
+            }
+        }
+
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+        if (!data) {
+            throw lastError || new Error('All Gemini STT models failed');
+        }
 
         const transcription = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         console.log(`[Gemini STT] Success! Transcription: "${transcription}"`);
@@ -366,7 +394,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         if(req.file && fs.existsSync(req.file.path)) {
             try { fs.unlinkSync(req.file.path); } catch(e) {}
         }
-        console.error("Gemini STT Error: ", err.response?.data || err.message);
+        console.error("Gemini STT Final Error: ", err.response?.data || err.message);
         res.json({ error: 'Gemini STT xizmatida xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.' });
     }
 });
