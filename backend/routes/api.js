@@ -332,8 +332,16 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
 
         const audioBuffer = fs.readFileSync(req.file.path);
         const base64Audio = audioBuffer.toString('base64');
-        const langCode = req.body.language || 'uz';
+        const langCode = (req.body.language || 'uz').toLowerCase();
 
+        let sttInstruction = `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.`;
+        if (langCode === 'uz') {
+            sttInstruction = `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, o'zbek tilidagi gaplarni aniq o'zbekcha matnga (aytilinganiga qarab) o'girib ber. Faqat transkripsiyaning o'zini qaytar, boshqa hech qanday izoh yozma.`;
+        } else if (langCode === 'ru') {
+            sttInstruction = `Внимательно прослушай это аудиосообщение и расшифруй речь на русском языке. Верни только текст расшифровки без каких-либо комментариев.`;
+        } else if (langCode === 'en') {
+            sttInstruction = `Listen to this audio carefully and transcribe the speech into English text. Return only the transcript text without extra comments.`;
+        }
         let mimeType = req.file.mimetype ? req.file.mimetype.split(';')[0].trim() : '';
         if (req.file.originalname && req.file.originalname.toLowerCase().endsWith('.wav')) {
             mimeType = 'audio/wav';
@@ -349,7 +357,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const payload = {
             contents: [{
                 parts: [
-                    { text: `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.` },
+                    { text: sttInstruction },
                     {
                         inlineData: {
                             mimeType: mimeType,
