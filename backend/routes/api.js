@@ -172,7 +172,7 @@ ${knowledgeBase}
 Faol reyslar ro'yxati (bu ma'lumotdan foydalan):
 ${JSON.stringify(shortFlights)}`;
 
-        const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         const payload = {
             contents: [{ parts: [{ text: sysInstruction }] }],
@@ -330,7 +330,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const base64Audio = audioBuffer.toString('base64');
         const langCode = req.body.language || 'uz';
 
-        const sttModel = process.env.GEMINI_STT_MODEL || 'gemini-1.5-flash';
+        const sttModel = process.env.GEMINI_STT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${sttModel}:generateContent?key=${apiKey}`;
         const mimeType = req.file.mimetype || "audio/webm";
         
