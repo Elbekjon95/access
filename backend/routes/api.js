@@ -351,7 +351,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
             mimeType = 'audio/wav';
         }
 
-        const model = process.env.GEMINI_STT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const model = process.env.GEMINI_STT_MODEL || 'gemini-2.5-flash';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         
         const payload = {
