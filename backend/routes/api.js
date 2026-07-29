@@ -334,9 +334,13 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const base64Audio = audioBuffer.toString('base64');
         const langCode = req.body.language || 'uz';
 
-        let mimeType = (req.file.mimetype || "audio/webm").split(';')[0].trim();
-        if (mimeType === 'application/octet-stream' || !mimeType) {
+        let mimeType = req.file.mimetype ? req.file.mimetype.split(';')[0].trim() : '';
+        if (req.file.originalname && req.file.originalname.toLowerCase().endsWith('.wav')) {
+            mimeType = 'audio/wav';
+        } else if (req.file.originalname && req.file.originalname.toLowerCase().endsWith('.webm')) {
             mimeType = 'audio/webm';
+        } else if (mimeType === 'application/octet-stream' || !mimeType) {
+            mimeType = 'audio/wav';
         }
 
         const model = process.env.GEMINI_STT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
