@@ -1,41 +1,43 @@
 #!/bin/bash
 
-# ACCSESS Server Setup Script (Ubuntu)
+# ACCSESS Server Setup Script (Ubuntu) for MongoDB & Nginx
 # Usage: sudo bash setup_server.sh
 
-# 1. Update system
-echo "Updating system..."
-sudo apt update && sudo apt upgrade -y
+set -e
 
-# 2. Install Node.js 18
-echo "Installing Node.js 18..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+echo "=== 1. Tizimni yangilash ==="
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl gnupg git ca-certificates ufw
+
+echo "=== 2. Node.js 20.x o'rnatish ==="
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# 3. Install PostgreSQL
-echo "Installing PostgreSQL..."
-sudo apt install -y postgresql postgresql-contrib
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
+echo "=== 3. MongoDB 7.0 o'rnatish ==="
+curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+   sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
+   --dearmor --yes
 
-# 4. Install Nginx
-echo "Installing Nginx..."
-sudo apt install -y nginx
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+echo "=== 4. Nginx va Certbot (SSL) o'rnatish ==="
+sudo apt install -y nginx certbot python3-certbot-nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
-# 5. Install Tesseract OCR
-echo "Installing Tesseract OCR..."
-sudo apt install -y tesseract-ocr libtesseract-dev
-
-# 6. Install PM2
-echo "Installing PM2..."
+echo "=== 5. PM2 o'rnatish ==="
 sudo npm install -g pm2
 
-# 7. Configure Firewall
-echo "Configuring firewall..."
+echo "=== 6. Firewall (UFW) sozlash ==="
 sudo ufw allow 'Nginx Full'
-sudo ufw allow 3000
-sudo ufw allow ssh
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw --force enable
 
-echo "Server setup complete! Please proceed with database setup and git clone."
+echo "=== Serverni tayyorlash yakunlandi! ==="

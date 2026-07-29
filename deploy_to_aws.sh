@@ -1,32 +1,31 @@
 #!/bin/bash
 
-# ACCSESS AWS Deployment Script
-# This script clones the repo, sets up the DB, builds frontend, and starts backend.
+# ACCSESS AWS Deployment Script for elbekroxmonov.uz
+# Domain: elbekroxmonov.uz
 
-# 1. Clone Repo
-echo "Cloning repository..."
-git clone https://github.com/Elbekjon95/access.git || cd access && git pull
-cd access
+set -e
 
-# 2. Database Setup
-echo "Configuring PostgreSQL..."
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-sudo -u postgres psql -c "CREATE DATABASE acsess4;"
-sudo -u postgres psql acsess4 < database_pg.sql
+DOMAIN="elbekroxmonov.uz"
+PROJECT_DIR="/home/ubuntu/access"
 
-# 3. Backend Setup
-echo "Installing Backend dependencies..."
-cd backend
+echo "=== 1. Git loyihasini olish / yangilash ==="
+if [ -d "$PROJECT_DIR" ]; then
+    echo "Loyiha papkasi mavjud, git pull qilinmoqda..."
+    cd "$PROJECT_DIR"
+    git pull origin main
+else
+    echo "Loyiha clone qilinmoqda..."
+    git clone https://github.com/Elbekjon95/access.git "$PROJECT_DIR"
+    cd "$PROJECT_DIR"
+fi
+
+echo "=== 2. Backend sozlash ==="
+cd "$PROJECT_DIR/backend"
 npm install
 
-echo "Creating .env file..."
+echo "Creating backend .env..."
 cat << 'EOF' > .env
-# ACCSESS - Production Environment Settings
-DB_HOST=localhost
-DB_NAME=acsess4
-DB_USER=postgres
-DB_PASS=postgres
-DB_PORT=5432
+MONGODB_URI=mongodb://127.0.0.1:27017/acsess4
 JWT_SECRET=acsess_secret_key_2024
 
 GEMINI_API_KEY=AIzaSyAj_gBvpBzvofJvtWJVrDZpFtmpD4iDYaM
@@ -44,48 +43,53 @@ COMPLAINT_EMAIL=elbekroxmonov@gmail.com
 TESSERACT_PATH=/usr/bin/tesseract
 EOF
 
-echo "Initializing database..."
-node scripts/init_pg_db.js
+echo "MongoDB initializatsiya va seed skriptini yurgizish..."
+node scripts/init_mongo_db.js
 
-# 4. Frontend Setup
-echo "Building Frontend..."
-cd ../frontend
+echo "=== 3. Frontend Build ==="
+cd "$PROJECT_DIR/frontend"
 npm install
 npm run build
 
-# 5. Nginx Configuration
-echo "Configuring Nginx..."
-sudo cat << 'EOF' > /tmp/nginx_access
+echo "=== 4. Nginx Sozlash ==="
+sudo cat << EOF > /etc/nginx/sites-available/$DOMAIN
 server {
     listen 80;
-    server_name _;
+    server_name $DOMAIN www.$DOMAIN;
 
-    root /home/ubuntu/access/frontend/dist;
+    root $PROJECT_DIR/frontend/dist;
     index index.html;
 
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     location /api/ {
-        proxy_pass http://localhost:3000/;
+        proxy_pass http://localhost:3001/api/;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
-sudo mv /tmp/nginx_access /etc/nginx/sites-available/default
+
+sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default || true
+
+sudo nginx -t
 sudo systemctl restart nginx
 
-# 6. PM2 Start
-echo "Starting Backend with PM2..."
-cd ../backend
-pm2 delete all || true
+echo "=== 5. PM2 Backend ishga tushirish ==="
+cd "$PROJECT_DIR/backend"
+pm2 delete access-backend || true
 pm2 start server.js --name "access-backend"
 pm2 save
-pm2 startup
+pm2 startup || true
 
-echo "Deployment finished! Access site at: http://13.62.45.119"
+echo "=== 6. SSL Sertifikat (Certbot HTTPS) ==="
+echo "Certbot HTTPS o'rnatish..."
+sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m elbekroxmonov@gmail.com || echo "DNS sozlanmagan bo'lsa Certbot o'tkazib yuborildi. DNS yo'naltirilgach: sudo certbot --nginx d $DOMAIN d www.$DOMAIN bering."
+
+echo "=== JAZOIR! Loyiha muvaffaqiyatli joylashtirildi: https://$DOMAIN ==="
