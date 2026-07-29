@@ -172,7 +172,8 @@ ${knowledgeBase}
 Faol reyslar ro'yxati (bu ma'lumotdan foydalan):
 ${JSON.stringify(shortFlights)}`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         const payload = {
             contents: [{ parts: [{ text: sysInstruction }] }],
             generationConfig: {
@@ -329,7 +330,9 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const base64Audio = audioBuffer.toString('base64');
         const langCode = req.body.language || 'uz';
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const sttModel = process.env.GEMINI_STT_MODEL || 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${sttModel}:generateContent?key=${apiKey}`;
+        const mimeType = req.file.mimetype || "audio/webm";
         
         const payload = {
             contents: [{
@@ -337,7 +340,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
                     { text: `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.` },
                     {
                         inlineData: {
-                            mimeType: "audio/wav",
+                            mimeType: mimeType,
                             data: base64Audio
                         }
                     }

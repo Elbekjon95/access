@@ -32,7 +32,8 @@ MONGODB_URI=mongodb://127.0.0.1:27017/acsess4
 JWT_SECRET=acsess_secret_key_2024
 
 GEMINI_API_KEY=AIzaSyAj_gBvpBzvofJvtWJVrDZpFtmpD4iDYaM
-GEMINI_MODEL=gemini-3.1-pro-preview
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_STT_MODEL=gemini-1.5-flash
 GEMINI_TTS_MODEL=gemini-2.5-flash-tts-preview
 
 UZBEKVOICE_API_KEY=0339da5f-d50b-43c6-add1-a2de75ed26ef:10a96f0e-c05b-48c2-8725-9ca77ad04095
