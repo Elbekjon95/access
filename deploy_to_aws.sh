@@ -12,7 +12,7 @@ echo "=== 1. Git loyihasini olish / yangilash ==="
 if [ -d "$PROJECT_DIR" ]; then
     echo "Loyiha papkasi mavjud, git pull qilinmoqda..."
     cd "$PROJECT_DIR"
-    git pull origin main
+    git pull origin main || true
 else
     echo "Loyiha clone qilinmoqda..."
     git clone https://github.com/Elbekjon95/access.git "$PROJECT_DIR"
@@ -52,7 +52,7 @@ npm install
 npm run build
 
 echo "=== 4. Nginx Sozlash ==="
-sudo cat << EOF > /etc/nginx/sites-available/$DOMAIN
+sudo tee /etc/nginx/sites-available/$DOMAIN > /dev/null << EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
@@ -90,6 +90,6 @@ pm2 startup || true
 
 echo "=== 6. SSL Sertifikat (Certbot HTTPS) ==="
 echo "Certbot HTTPS o'rnatish..."
-sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m elbekroxmonov@gmail.com || echo "DNS sozlanmagan bo'lsa Certbot o'tkazib yuborildi. DNS yo'naltirilgach: sudo certbot --nginx d $DOMAIN d www.$DOMAIN bering."
+sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m elbekroxmonov@gmail.com || echo "DNS sozlanmagan bo'lsa Certbot o'tkazib yuborildi."
 
-echo "=== JAZOIR! Loyiha muvaffaqiyatli joylashtirildi: https://$DOMAIN ==="
+echo "=== LOYIHA MUVAFFAQIYATLI JOYLASHTIRILDI! ==="
