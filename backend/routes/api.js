@@ -388,7 +388,7 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         }
         console.error("Gemini STT Error Details: ", err.response?.status, err.response?.data || err.message);
         const errorDetails = err.response?.data?.error?.message || err.message || 'Gemini STT xizmatida xatolik yuz berdi.';
-        res.status(500).json({ error: errorDetails });
+        res.json({ error: errorDetails });
     }
 });
 
