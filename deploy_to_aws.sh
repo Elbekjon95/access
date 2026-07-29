@@ -8,6 +8,9 @@ set -e
 DOMAIN="elbekroxmonov.uz"
 PROJECT_DIR="/home/ubuntu/access"
 
+# Home directory ruxsatlarini to'g'rilash (Nginx 500 error ni oldini olish uchun)
+sudo chmod 755 /home/ubuntu
+
 echo "=== 1. Git loyihasini olish / yangilash ==="
 if [ -d "$PROJECT_DIR" ]; then
     echo "Loyiha papkasi mavjud, git pull qilinmoqda..."
@@ -54,8 +57,9 @@ npm run build
 echo "=== 4. Nginx Sozlash ==="
 sudo tee /etc/nginx/sites-available/$DOMAIN > /dev/null << EOF
 server {
-    listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name $DOMAIN www.$DOMAIN _;
 
     root $PROJECT_DIR/frontend/dist;
     index index.html;
@@ -65,7 +69,7 @@ server {
     }
 
     location /api/ {
-        proxy_pass http://localhost:3001/api/;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
