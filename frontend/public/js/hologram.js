@@ -25,16 +25,43 @@ export function initHologram() {
   pointLight.position.set(50, 50, 50);
   state.scene.add(pointLight);
 
-  const loader = new THREE.TextureLoader();
-  loader.load("img/logo_hologram.png", function (texture) {
-    createHologramFromTexture(texture);
-  });
+  updateHologramForMode(state.transportMode || 'aviation');
 
   window.addEventListener("resize", onWindowResize, false);
   animate();
 }
 
-function createHologramFromTexture(texture) {
+
+
+export function updateHologramForMode(mode = 'aviation') {
+  if (!state.scene) return;
+  
+  if (state.particleSystem) {
+    state.scene.remove(state.particleSystem);
+    if (state.particleSystem.geometry) state.particleSystem.geometry.dispose();
+    if (state.particleSystem.material) state.particleSystem.material.dispose();
+    state.particleSystem = null;
+  }
+
+  let imagePath = "img/logo_hologram.png";
+  if (mode === 'railway') {
+    imagePath = "img/logo_temir.png";
+  } else if (mode === 'bus') {
+    imagePath = "img/tash_logo.png";
+  }
+
+  const loader = new THREE.TextureLoader();
+  loader.load(imagePath, function (texture) {
+    createHologramFromTexture(texture, mode);
+  }, undefined, function (err) {
+    console.error("Hologram rasm yuklashda xato:", err);
+  });
+}
+window.updateHologramForMode = updateHologramForMode;
+
+function createHologramFromTexture(texture, mode = 'aviation') {
+  if (!state.scene) return;
+
   const width = 200;
   const height = 200;
   const particles = 150000;
@@ -46,37 +73,74 @@ function createHologramFromTexture(texture) {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(texture.image, 0, 0, width, height);
+
+  const imgEl = texture.image;
+  if (!imgEl) return;
+
+  ctx.drawImage(imgEl, 0, 0, width, height);
   const imgData = ctx.getImageData(0, 0, width, height).data;
 
-  let validParticles = 0;
-  for (let i = 0; i < particles; i++) {
-    let x = Math.random() * width;
-    let y = Math.random() * height;
+  // PNG (alpha) yoki JPG (RGB) ekanligini aniqlaymiz
+  let isAlphaImage = false;
+  for (let i = 3; i < imgData.length; i += 40) {
+    if (imgData[i] < 250) {
+      isAlphaImage = true;
+      break;
+    }
+  }
 
-    const idx = (Math.floor(y) * width + Math.floor(x)) * 4;
-    if (imgData[idx + 3] > 80) {
+  let validParticles = 0;
+  let attempts = 0;
+  const maxAttempts = particles * 8;
+
+  while (validParticles < particles && attempts < maxAttempts) {
+    attempts++;
+    const x = Math.floor(Math.random() * width);
+    const y = Math.floor(Math.random() * height);
+    const idx = (y * width + x) * 4;
+    const r = imgData[idx];
+    const g = imgData[idx + 1];
+    const b = imgData[idx + 2];
+    const a = imgData[idx + 3];
+
+    let keep = false;
+    if (isAlphaImage) {
+      // PNG shaffof bo'lsa, faqat logo shaklidagi piksellarni olamiz
+      keep = a > 80 && (r > 20 || g > 20 || b > 20);
+    } else {
+      // Oq yoki qora fonli rasmlar uchun
+      const brightness = (r + g + b) / 3;
+      keep = brightness > 30 && brightness < 240;
+    }
+
+    if (keep) {
       positions[validParticles * 3] = (x - width / 2) * 1.5;
       positions[validParticles * 3 + 1] = -(y - height / 2) * 1.5;
       positions[validParticles * 3 + 2] = (Math.random() - 0.5) * 5;
 
-      colors[validParticles * 3] = 0.835;
-      colors[validParticles * 3 + 1] = 0.631;
-      colors[validParticles * 3 + 2] = 0.027;
+      if (mode === 'railway') {
+        colors[validParticles * 3] = 0.0;     // R
+        colors[validParticles * 3 + 1] = 0.9; // G (Cyan)
+        colors[validParticles * 3 + 2] = 1.0; // B
+      } else if (mode === 'bus') {
+        colors[validParticles * 3] = 1.0;     // R (Gold/Yellow)
+        colors[validParticles * 3 + 1] = 0.8; // G
+        colors[validParticles * 3 + 2] = 0.0; // B
+      } else {
+        colors[validParticles * 3] = 0.835;   // Original Gold Hologram
+        colors[validParticles * 3 + 1] = 0.631;
+        colors[validParticles * 3 + 2] = 0.027;
+      }
 
       validParticles++;
     }
   }
 
   const finalPositions = positions.slice(0, validParticles * 3);
-  geometry.setAttribute(
-    "position",
-    new THREE.BufferAttribute(finalPositions, 3),
-  );
-  geometry.setAttribute(
-    "color",
-    new THREE.BufferAttribute(colors.slice(0, validParticles * 3), 3),
-  );
+  const finalColors = colors.slice(0, validParticles * 3);
+
+  geometry.setAttribute("position", new THREE.BufferAttribute(finalPositions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(finalColors, 3));
 
   geometry.userData = { originalPositions: new Float32Array(finalPositions) };
 
@@ -95,7 +159,7 @@ function createHologramFromTexture(texture) {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (window.pauseHologram) return; // CPU/GPU tejash
+  if (window.pauseHologram) return;
   if (state.particleSystem) {
     const time = Date.now() * 0.001;
     state.particleSystem.rotation.y = Math.sin(time * 0.3) * (Math.PI / 8);
@@ -167,3 +231,4 @@ function onWindowResize() {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 }
+

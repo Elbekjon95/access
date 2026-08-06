@@ -427,10 +427,11 @@ export async function sendMessage(message) {
 
   try {
     const lang = getSelectedLanguage();
+    const mode = state.transportMode || "aviation";
     const response = await fetch("api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: message, language: lang }),
+      body: JSON.stringify({ message: message, language: lang, transportMode: mode }),
     });
 
     const responseText = await response.text();

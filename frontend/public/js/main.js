@@ -37,7 +37,58 @@ window.stopAssistantVoice = stopAssistantVoice;
 window.toggleAssistantVoice = toggleAssistantVoice;
 window.startComplaintRecording = startComplaintRecording;
 window.stopComplaintRecording = stopComplaintRecording;
-window.initWeather = initWeather;
+export function setTransportMode(mode) {
+  if (window.state) {
+    window.state.transportMode = mode;
+  }
+  if (typeof window.clearFlightsCache === 'function') {
+    window.clearFlightsCache();
+  }
+  if (typeof window.updateHologramForMode === 'function') {
+    window.updateHologramForMode(mode);
+  }
+  if (typeof window.updateMapSidePanelsForMode === 'function') {
+    window.updateMapSidePanelsForMode(mode);
+  }
+
+  const logoText = document.querySelector('.logo-text');
+  const assistantText = document.getElementById('assistant-text');
+  const mapModalTitle = document.querySelector('#map-modal header h3');
+  const flightsModalTitle = document.querySelector('#flights-modal header h3');
+
+  // Modal Tab tugmalarini yangilash
+  const departureTabBtn = document.querySelector('.flight-tab-btn[data-type="departure"]');
+  const arrivalTabBtn = document.querySelector('.flight-tab-btn[data-type="arrival"]');
+
+  if (mode === 'railway') {
+    if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-train" style="margin-right: 8px; color: #00e5ff;"></i> ACCESS RAILWAY`;
+    if (assistantText) assistantText.innerText = "Xush kelibsiz! Vokzal va poyezdlar jadvali bo'yicha savol berishingiz mumkin.";
+    if (mapModalTitle) mapModalTitle.innerText = "Temir Yo'l Vokzali Haritasi";
+    if (flightsModalTitle) flightsModalTitle.innerText = "Joriy poyezdlar jadvali";
+
+    if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-train"></i> JO'NASH POYEZDLARI`;
+    if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-train"></i> KELISH POYEZDLARI`;
+
+  } else if (mode === 'bus') {
+    if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-bus" style="margin-right: 8px; color: #ffcc00;"></i> ACCESS BUS TERMINAL`;
+    if (assistantText) assistantText.innerText = "Xush kelibsiz! Avtovokzal va avtobus reyslari bo'yicha savol berishingiz mumkin.";
+    if (mapModalTitle) mapModalTitle.innerText = "Avtovokzal Haritasi";
+    if (flightsModalTitle) flightsModalTitle.innerText = "Joriy avtobus reyslari jadvali";
+
+    if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-bus"></i> JO'NASH AVTOBUSLARI`;
+    if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-bus"></i> KELISH AVTOBUSLARI`;
+
+  } else {
+    if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-plane" style="margin-right: 8px; color: #00c6ff;"></i> ACCESS AIRPORT`;
+    if (assistantText) assistantText.innerText = "Xush kelibsiz! Aeroport va parvozlar bo'yicha savol berishingiz mumkin.";
+    if (mapModalTitle) mapModalTitle.innerText = "Aerovokzal Haritasi";
+    if (flightsModalTitle) flightsModalTitle.innerText = "Joriy reyslar jadvali";
+
+    if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-plane-departure"></i> Uchib ketish`;
+    if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-plane-arrival"></i> Uchib kelish`;
+  }
+}
+window.setTransportMode = setTransportMode;
 
 const mapViewState = {
   scale: 1,
@@ -221,6 +272,94 @@ window.initLegacyApp = () => {
 };
 
 // Auto-initialization Vue tomonidan Kiosk.vue da boshqariladi
+
+export function updateMapSidePanelsForMode(mode = 'aviation') {
+    const leftHeader = document.querySelector('#map-modal .map-side-panel.left .panel-header');
+    const rightHeader = document.querySelector('#map-modal .map-side-panel.right .panel-header');
+    const listServices = document.getElementById("list-services");
+    const listGates = document.getElementById("list-gates");
+
+    if (!listServices || !listGates) return;
+
+    if (mode === 'railway') {
+        if (leftHeader) leftHeader.innerText = "Vokzal Xizmatlari";
+        if (rightHeader) rightHeader.innerText = "Peronlar & Yo'llar";
+
+        const railwayServices = [
+            { name: "Chiptaxonalar (Kassa 1-10)", icon: "fa-ticket-alt" },
+            { name: "VIP / CIP Kutish Zali", icon: "fa-couch" },
+            { name: "Ona va bola xonasi", icon: "fa-baby" },
+            { name: "Yuk saqlash xonasi", icon: "fa-suitcase" },
+            { name: "Kutish Zali & Kafe", icon: "fa-utensils" },
+            { name: "Hojatxona", icon: "fa-restroom" },
+            { name: "Tibbiyot Punkt (Medpunkt)", icon: "fa-first-aid" },
+            { name: "Namozxona", icon: "fa-mosque" }
+        ];
+
+        const railwayPlatforms = [
+            { name: "Peron 1 (Afrosiyob Yo'li)", icon: "fa-train" },
+            { name: "Peron 2 (Sharq / Express Yo'li)", icon: "fa-train" },
+            { name: "Peron 3 (Vodiy Yo'nalishi)", icon: "fa-train" },
+            { name: "Peron 4 (Termiz / Qarshi Yo'li)", icon: "fa-train" },
+            { name: "Peron 5 (Nukus / Xiva Yo'li)", icon: "fa-train" }
+        ];
+
+        renderPanelList(listServices, railwayServices);
+        renderPanelList(listGates, railwayPlatforms);
+
+    } else if (mode === 'bus') {
+        if (leftHeader) leftHeader.innerText = "Yo'nalishlar (GPS)";
+        if (rightHeader) rightHeader.innerText = "Toshkent Bekatlari";
+
+        const busServices = [
+            { name: "28-Avtobus (Vokzal - Yunusobod)", icon: "fa-bus" },
+            { name: "51-Avtobus (Yunusobod - Chorsu)", icon: "fa-bus" },
+            { name: "14-Avtobus (Vokzal - TTZ)", icon: "fa-bus" },
+            { name: "38-Avtobus (Chilonzor - B.Ipak Yo'li)", icon: "fa-bus" },
+            { name: "91-Avtobus (Yunusobod - Qo'yliq)", icon: "fa-bus" },
+            { name: "115-Avtobus (Qoraqamysh - Sergeli)", icon: "fa-bus" }
+        ];
+
+        const busPlatforms = [
+            { name: "Amir Temur Xiyoboni", icon: "fa-map-marker-alt" },
+            { name: "Chorsu Bozori", icon: "fa-store" },
+            { name: "Toshkent Vokzali", icon: "fa-train" },
+            { name: "Oloy Bozori", icon: "fa-shopping-basket" },
+            { name: "Yunusobod 6-mavze", icon: "fa-building" },
+            { name: "Chilonzor Metro", icon: "fa-subway" },
+            { name: "Buyuk Ipak Yo'li", icon: "fa-tree" },
+            { name: "TTZ Avtovokzal", icon: "fa-bus-alt" }
+        ];
+
+        renderPanelList(listServices, busServices);
+        renderPanelList(listGates, busPlatforms);
+
+    } else {
+        if (leftHeader) leftHeader.innerText = "xizmatlar";
+        if (rightHeader) rightHeader.innerText = "Darvozalar";
+        if (window.airportNav && window.airportNav.nodes) {
+            fillSidePanels(window.airportNav.nodes);
+        }
+    }
+}
+
+function renderPanelList(container, items) {
+    container.innerHTML = "";
+    items.forEach(itemData => {
+        const item = document.createElement("div");
+        item.className = "panel-item";
+        item.innerHTML = `<i class="fas ${itemData.icon}"></i><span>${itemData.name}</span>`;
+        item.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.airportNav && typeof window.airportNav.findPath === "function") {
+                window.airportNav.findPath(itemData.name);
+            }
+        };
+        container.appendChild(item);
+    });
+}
+window.updateMapSidePanelsForMode = updateMapSidePanelsForMode;
 
 /**
  * Xarita yon panellarini nuqtalar bilan to'ldirish

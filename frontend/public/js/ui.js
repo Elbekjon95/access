@@ -118,6 +118,13 @@ export function resetComplaintPreview() {
 }
 
 let cachedFlightsData = null;
+let cachedTransportMode = null;
+
+export function clearFlightsCache() {
+  cachedFlightsData = null;
+  cachedTransportMode = null;
+}
+window.clearFlightsCache = clearFlightsCache;
 
 export async function loadFlightsToTable(filterType = "departure") {
   const tbody = document.getElementById("flights-body");
@@ -125,18 +132,33 @@ export async function loadFlightsToTable(filterType = "departure") {
   tbody.innerHTML =
     '<tr><td colspan="6" style="text-align:center;">Yuklanmoqda...</td></tr>';
 
+  const mode = window.state?.transportMode || "aviation";
+
+  // Table header larni dinamik yangilash
+  const tableHeaderRow = document.querySelector("#flights-table thead tr");
+  if (tableHeaderRow) {
+    if (mode === "railway") {
+      tableHeaderRow.innerHTML = `<th>Poyezd №</th><th>Yo'nalish</th><th>Vaqt</th><th>Peron</th><th>Vagon / Kassa</th><th>Holat</th>`;
+    } else if (mode === "bus") {
+      tableHeaderRow.innerHTML = `<th>Avtobus №</th><th>Yo'nalish</th><th>Vaqt</th><th>Platforma</th><th>Chiptaxona</th><th>Holat</th>`;
+    } else {
+      tableHeaderRow.innerHTML = `<th>Reys №</th><th>Yo'nalish</th><th>Vaqt</th><th>Gate</th><th>Stoyka</th><th>Holat</th>`;
+    }
+  }
+
   try {
     let flights = cachedFlightsData;
-    if (!flights) {
-      const response = await fetch("api/flights");
+    if (!flights || cachedTransportMode !== mode) {
+      const response = await fetch(`api/flights?mode=${mode}`);
       flights = await response.json();
       cachedFlightsData = flights;
+      cachedTransportMode = mode;
     }
 
     tbody.innerHTML = "";
     if (flights && flights.error) {
       tbody.innerHTML =
-        '<tr><td colspan="6" style="text-align:center; color:#ff5252;">Reyslar API xatosi: ' +
+        '<tr><td colspan="6" style="text-align:center; color:#ff5252;">API xatosi: ' +
         flights.error +
         "</td></tr>";
       return;
@@ -146,7 +168,7 @@ export async function loadFlightsToTable(filterType = "departure") {
         const isArr =
           f.type === "arrival" ||
           f.movement === "ARRIVAL" ||
-          f.from !== "Tashkent (TAS)";
+          (f.to && (f.to.includes("TAS") || f.to.includes("Toshkent Shimoliy") || f.to.includes("Toshkent Central")));
         return filterType === "arrival" ? isArr : !isArr;
       });
 
@@ -158,22 +180,22 @@ export async function loadFlightsToTable(filterType = "departure") {
 
           let directionBadge = "";
           let routeHtml = "";
-          if (
-            f.type === "arrival" ||
-            f.movement === "ARRIVAL" ||
-            f.from !== "Tashkent (TAS)"
-          ) {
-            directionBadge =
-              '<span style="color:#00e5ff; font-weight:bold;">[KELISH]</span>';
-            routeHtml = `<strong>${f.from}</strong> <i class="fas fa-plane-arrival" style="margin:0 5px;color:#00e5ff"></i> TAS`;
+          let iconClass = "fa-plane";
+          if (mode === "railway") iconClass = "fa-train";
+          else if (mode === "bus") iconClass = "fa-bus";
+          else iconClass = f.type === "arrival" ? "fa-plane-arrival" : "fa-plane-departure";
+
+          const isArr = f.type === "arrival" || f.movement === "ARRIVAL";
+          if (isArr) {
+            directionBadge = '<span style="color:#00e5ff; font-weight:bold;">[KELISH]</span>';
+            routeHtml = `<strong>${f.from}</strong> <i class="fas ${iconClass}" style="margin:0 5px;color:#00e5ff"></i> ${f.to}`;
           } else {
-            directionBadge =
-              '<span style="color:#ffcc00; font-weight:bold;">[UCHISH]</span>';
-            routeHtml = `TAS <i class="fas fa-plane-departure" style="margin:0 5px;color:#ffcc00"></i> <strong>${f.to}</strong>`;
+            directionBadge = '<span style="color:#ffcc00; font-weight:bold;">[JO\'NASH]</span>';
+            routeHtml = `${f.from} <i class="fas ${iconClass}" style="margin:0 5px;color:#ffcc00"></i> <strong>${f.to}</strong>`;
           }
 
           const statusClass =
-            f.status && f.status.toLowerCase().includes("uchib")
+            f.status && (f.status.toLowerCase().includes("uchib") || f.status.toLowerCase().includes("yo'lga"))
               ? 'style="background:rgba(255,82,82,0.2);"'
               : 'style="background:rgba(0,198,255,0.2);"';
 

@@ -11,6 +11,8 @@ class AirportNavigation {
     this.collisionGrid = null;
     this.gridSize = 30; // Grid o'lchami oshirildi (tezlik uchun)
     this.backgroundImage = new Image();
+    this.railwayMapImage = new Image();
+    this.railwayMapImage.src = 'img/railway_map.png';
     this.kioskPos = { x: 500, y: 800 };
     this.offset = 0;
     this.pathRevealProgress = 0; 
@@ -397,7 +399,19 @@ class AirportNavigation {
 
     this.ctx.save();
     this.ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
-    this.ctx.drawImage(this.backgroundImage, 0, 0);
+
+    const currentMode = window.state?.transportMode || 'aviation';
+    if (currentMode === 'railway') {
+      if (this.railwayMapImage && this.railwayMapImage.complete && this.railwayMapImage.naturalWidth !== 0) {
+        this.ctx.drawImage(this.railwayMapImage, 0, 0, wW, wH);
+      } else {
+        this.drawRailwayStationMap(wW, wH);
+      }
+    } else if (currentMode === 'bus') {
+      this.drawLiveTashkentCityBusMap(wW, wH);
+    } else {
+      this.ctx.drawImage(this.backgroundImage, 0, 0);
+    }
 
     // Markerlarni chizish (Logotiplar va Ikonkalar bilan)
     const iconMap = {
@@ -515,4 +529,368 @@ class AirportNavigation {
     }
     this.ctx.restore();
   }
+
+  drawRailwayStationMap(wW, wH) {
+    const ctx = this.ctx;
+    ctx.fillStyle = "#0c1825";
+    ctx.fillRect(0, 0, wW, wH);
+
+    ctx.strokeStyle = "rgba(0, 198, 255, 0.08)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < wW; x += 50) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, wH); ctx.stroke();
+    }
+    for (let y = 0; y < wH; y += 50) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(wW, y); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#16283d";
+    ctx.strokeStyle = "#00e5ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(150, 250, 700, 500, 20); else ctx.rect(150, 250, 700, 500);
+    ctx.fill();
+    ctx.stroke();
+
+    const platformY = [80, 120, 160, 200];
+    const platformNames = ["PERON 1 (Afrosiyob)", "PERON 2 (Sharq Express)", "PERON 3 (Vodiy Yo'li)", "PERON 4 (Termiz/Qarshi)"];
+
+    for (let i = 0; i < platformY.length; i++) {
+      const y = platformY[i];
+      ctx.strokeStyle = "rgba(255, 204, 0, 0.6)";
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(100, y); ctx.lineTo(900, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(100, y + 6); ctx.lineTo(900, y + 6); ctx.stroke();
+
+      ctx.fillStyle = "rgba(0, 229, 255, 0.2)";
+      ctx.strokeStyle = "#00e5ff";
+      ctx.lineWidth = 1;
+      ctx.fillRect(140, y - 18, 720, 12);
+      ctx.strokeRect(140, y - 18, 720, 12);
+
+      ctx.fillStyle = "#00e5ff";
+      ctx.font = "bold 12px Orbitron, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`🚆 ${platformNames[i]}`, 150, y - 6);
+    }
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(250, 72, 380, 14, 6); else ctx.rect(250, 72, 380, 14);
+    ctx.fill();
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 9px sans-serif";
+    ctx.fillText("AFROSIYOB 762F", 260, 83);
+
+    ctx.fillStyle = "rgba(0, 198, 255, 0.15)";
+    ctx.strokeStyle = "rgba(0, 198, 255, 0.4)";
+    ctx.fillRect(180, 280, 220, 140);
+    ctx.strokeRect(180, 280, 220, 140);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px Outfit, sans-serif";
+    ctx.fillText("🎫 CHIPTAXONALAR (KASSA 1-10)", 195, 310);
+
+    ctx.fillStyle = "rgba(255, 204, 0, 0.15)";
+    ctx.strokeStyle = "rgba(255, 204, 0, 0.4)";
+    ctx.fillRect(440, 280, 220, 140);
+    ctx.strokeRect(440, 280, 220, 140);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillText("⭐ VIP / CIP KUTISH ZALI", 455, 310);
+
+    ctx.fillStyle = "rgba(0, 230, 118, 0.15)";
+    ctx.strokeStyle = "rgba(0, 230, 118, 0.4)";
+    ctx.fillRect(680, 280, 140, 140);
+    ctx.strokeRect(680, 280, 140, 140);
+    ctx.fillStyle = "#00e676";
+    ctx.fillText("🧳 YUK SAQLASH", 690, 310);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(180, 450, 480, 200);
+    ctx.strokeRect(180, 450, 480, 200);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("🛋️ AMALGI KUTISH ZALI & KAFE", 200, 480);
+
+    ctx.fillStyle = "rgba(255, 82, 82, 0.15)";
+    ctx.fillRect(680, 450, 140, 200);
+    ctx.strokeRect(680, 450, 140, 200);
+    ctx.fillStyle = "#ff5252";
+    ctx.fillText("🚻 HOJATXONA", 695, 480);
+    ctx.fillText("👶 ONA VA BOLA", 695, 520);
+    ctx.fillText("🏥 MEDPUNKT", 695, 560);
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath();
+    ctx.arc(500, 680, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("KIOSK", 500, 684);
+  }
+
+  drawBusTerminalMap(wW, wH) {
+    const ctx = this.ctx;
+    ctx.fillStyle = "#121820";
+    ctx.fillRect(0, 0, wW, wH);
+
+    ctx.strokeStyle = "rgba(255, 204, 0, 0.08)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < wW; x += 50) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, wH); ctx.stroke();
+    }
+    for (let y = 0; y < wH; y += 50) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(wW, y); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#1e293b";
+    ctx.strokeStyle = "#ffcc00";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(150, 250, 700, 480, 20); else ctx.rect(150, 250, 700, 480);
+    ctx.fill();
+    ctx.stroke();
+
+    const busBays = [
+      { name: "PLATFORMA 1 (Buxoro / Xiva)", x: 180, y: 100 },
+      { name: "PLATFORMA 2 (Samarqand)", x: 420, y: 100 },
+      { name: "PLATFORMA 3 (Qarshi / Shahrisabz)", x: 660, y: 100 },
+      { name: "PLATFORMA 4 (Farg'ona / Marg'ilon)", x: 180, y: 170 },
+      { name: "PLATFORMA 5 (Namangan / Andijon)", x: 420, y: 170 },
+      { name: "PLATFORMA 6 (Guliston / Sirdaryo)", x: 660, y: 170 }
+    ];
+
+    busBays.forEach(b => {
+      ctx.fillStyle = "rgba(255, 204, 0, 0.15)";
+      ctx.strokeStyle = "#ffcc00";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(b.x, b.y, 200, 45);
+      ctx.strokeRect(b.x, b.y, 200, 45);
+
+      ctx.fillStyle = "#ffcc00";
+      ctx.font = "bold 11px Orbitron, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`🚌 ${b.name}`, b.x + 8, b.y + 26);
+    });
+
+    ctx.fillStyle = "#00e5ff";
+    ctx.fillRect(430, 60, 180, 30);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("BUS-204 VODIY EXPRESS", 440, 78);
+
+    ctx.fillStyle = "rgba(0, 198, 255, 0.15)";
+    ctx.strokeStyle = "#00c6ff";
+    ctx.fillRect(180, 280, 320, 130);
+    ctx.strokeRect(180, 280, 320, 130);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px Outfit, sans-serif";
+    ctx.fillText("🎫 CHIPTAXONA (1-6 BILETLAR)", 195, 310);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(530, 280, 290, 260);
+    ctx.strokeRect(530, 280, 290, 260);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillText("🛋️ MARKAZIY KUTISH ZALI", 545, 310);
+    ctx.fillText("🍔 AVTOVOKZAL KAFESI", 545, 350);
+
+    ctx.fillStyle = "rgba(0, 230, 118, 0.15)";
+    ctx.fillRect(180, 440, 320, 100);
+    ctx.strokeRect(180, 440, 320, 100);
+    ctx.fillStyle = "#00e676";
+    ctx.fillText("🎧 DISPETCHERLIK & YUKXONA", 195, 470);
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath();
+    ctx.arc(500, 640, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("KIOSK", 500, 644);
+  }
+
+  drawLiveTashkentCityBusMap(wW, wH) {
+    const ctx = this.ctx;
+
+    if (!this.tashkentBuses) {
+      this.tashkentBuses = [
+        {
+          id: '28', name: '28-Avtobus (Toshkent Vokzali - Yunusobod)',
+          route: [{x: 500, y: 650}, {x: 500, y: 480}, {x: 500, y: 300}, {x: 480, y: 150}],
+          progress: 0.1, speed: 0.0018, color: '#00e5ff', nextStop: 'Amir Temur Xiyoboni', eta: '2 min', currentSpeed: 38
+        },
+        {
+          id: '51', name: '51-Avtobus (Yunusobod 6-mavze - Chorsu Bozori)',
+          route: [{x: 480, y: 150}, {x: 360, y: 280}, {x: 280, y: 420}, {x: 250, y: 550}],
+          progress: 0.45, speed: 0.0022, color: '#ffcc00', nextStop: 'Oloy Bozori', eta: '1 min', currentSpeed: 42
+        },
+        {
+          id: '14', name: '14-Avtobus (Toshkent Vokzali - TTZ)',
+          route: [{x: 500, y: 650}, {x: 620, y: 500}, {x: 740, y: 360}, {x: 820, y: 220}],
+          progress: 0.72, speed: 0.0019, color: '#00e676', nextStop: 'Buyuk Ipak Yo\'li', eta: '4 min', currentSpeed: 35
+        },
+        {
+          id: '38', name: '38-Avtobus (Chilonzor 25-mavze - Buyuk Ipak Yo\'li)',
+          route: [{x: 220, y: 640}, {x: 360, y: 520}, {x: 500, y: 480}, {x: 740, y: 360}],
+          progress: 0.28, speed: 0.0015, color: '#ff5252', nextStop: 'Bunyodkor Metro', eta: '3 min', currentSpeed: 30
+        },
+        {
+          id: '91', name: '91-Avtobus (Yunusobod 15-mavze - Qo\'yliq bozori)',
+          route: [{x: 480, y: 150}, {x: 600, y: 340}, {x: 650, y: 520}, {x: 720, y: 680}],
+          progress: 0.58, speed: 0.0017, color: '#e040fb', nextStop: 'Qo\'yliq 5-bekat', eta: '5 min', currentSpeed: 40
+        },
+        {
+          id: '115', name: '115-Avtobus (Qoraqamysh - Sergeli 7-mavze)',
+          route: [{x: 250, y: 200}, {x: 300, y: 380}, {x: 380, y: 580}, {x: 420, y: 720}],
+          progress: 0.35, speed: 0.0014, color: '#ff9100', nextStop: 'Chorsu Bozori', eta: '2 min', currentSpeed: 36
+        }
+      ];
+    }
+
+    ctx.fillStyle = "#0c131d";
+    ctx.fillRect(0, 0, wW, wH);
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < wW; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, wH); ctx.stroke();
+    }
+    for (let y = 0; y < wH; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(wW, y); ctx.stroke();
+    }
+
+    const roads = [
+      { name: "Amir Temur shoh ko'chasi", points: [{x: 500, y: 50}, {x: 500, y: 750}], width: 14, color: "rgba(255, 255, 255, 0.25)" },
+      { name: "Navoiy ko'chasi", points: [{x: 100, y: 480}, {x: 900, y: 480}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
+      { name: "Bunyodkor shoh ko'chasi", points: [{x: 150, y: 700}, {x: 500, y: 480}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
+      { name: "Mustaqillik ko'chasi", points: [{x: 500, y: 480}, {x: 880, y: 200}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
+      { name: "Kichik Halqa Yo'li", points: [{x: 250, y: 200}, {x: 750, y: 200}, {x: 820, y: 650}, {x: 250, y: 650}, {x: 250, y: 200}], width: 8, color: "rgba(0, 198, 255, 0.15)" }
+    ];
+
+    roads.forEach(r => {
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = r.width;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      r.points.forEach((p, idx) => {
+        if (idx === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+    });
+
+    const landmarks = [
+      { name: "🏛️ Amir Temur Xiyoboni", x: 500, y: 480, type: "hub" },
+      { name: "🛍️ Chorsu Bozori", x: 250, y: 550, type: "hub" },
+      { name: "🚉 Toshkent Vokzali", x: 500, y: 650, type: "hub" },
+      { name: "🏪 Oloy Bozori", x: 500, y: 380, type: "stop" },
+      { name: "🏘️ Yunusobod 6-mavze", x: 480, y: 150, type: "stop" },
+      { name: "🏢 Chilonzor Metro", x: 220, y: 640, type: "stop" },
+      { name: "🌳 Buyuk Ipak Yo'li", x: 740, y: 360, type: "stop" },
+      { name: "🚌 TTZ Avtovokzal", x: 820, y: 220, type: "stop" },
+      { name: "🛒 Qo'yliq Bozori", x: 720, y: 680, type: "stop" }
+    ];
+
+    landmarks.forEach(lm => {
+      ctx.fillStyle = lm.type === 'hub' ? "#ffcc00" : "#00e5ff";
+      ctx.beginPath();
+      ctx.arc(lm.x, lm.y, lm.type === 'hub' ? 8 : 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 11px Orbitron, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(lm.name, lm.x, lm.y - 12);
+    });
+
+    const now = Date.now() * 0.001;
+
+    this.tashkentBuses.forEach(bus => {
+      bus.progress += bus.speed;
+      if (bus.progress >= 1) bus.progress = 0;
+
+      const pos = getPointAlongRoute(bus.route, bus.progress);
+
+      ctx.strokeStyle = bus.color;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      bus.route.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const pulseSize = 12 + Math.sin(now * 4 + Number(bus.id)) * 6;
+      ctx.fillStyle = bus.color;
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+
+      ctx.fillStyle = bus.color;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(pos.x - 32, pos.y - 14, 64, 28, 8); else ctx.rect(pos.x - 32, pos.y - 14, 64, 28);
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 11px Orbitron, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`🚌 ${bus.id}`, pos.x, pos.y + 4);
+
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.strokeStyle = bus.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(pos.x - 65, pos.y - 38, 130, 20, 5); else ctx.rect(pos.x - 65, pos.y - 38, 130, 20);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "10px sans-serif";
+      ctx.fillText(`${bus.nextStop} • ${bus.eta}`, pos.x, pos.y - 24);
+    });
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+    ctx.strokeStyle = "#00e5ff";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(40, 25, wW - 80, 45, 10); else ctx.rect(40, 25, wW - 80, 45);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.font = "bold 13px Orbitron, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("🚦 TOSHKENT YO'LLARI TIRBANDLIGI: 3 ball (Erkin harakat)", 60, 52);
+
+    ctx.fillStyle = "#00e5ff";
+    ctx.textAlign = "right";
+    ctx.fillText("📡 LIVE GPS: 24 TA AVTOBUS HARAKATDA", wW - 60, 52);
+  }
+}
+
+function getPointAlongRoute(points, progress) {
+  if (points.length < 2) return points[0] || {x: 0, y: 0};
+  const totalSegments = points.length - 1;
+  const scaledProgress = progress * totalSegments;
+  const segmentIndex = Math.min(Math.floor(scaledProgress), totalSegments - 1);
+  const segmentProgress = scaledProgress - segmentIndex;
+
+  const p1 = points[segmentIndex];
+  const p2 = points[segmentIndex + 1];
+
+  return {
+    x: p1.x + (p2.x - p1.x) * segmentProgress,
+    y: p1.y + (p2.y - p1.y) * segmentProgress
+  };
 }

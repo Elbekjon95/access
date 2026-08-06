@@ -23,13 +23,35 @@ const handleLangSelect = (lang) => {
   if (modal) modal.classList.add("hide");
 };
 
+const handleTransportSelect = (mode) => {
+  if (typeof window.setTransportMode === 'function') {
+    window.setTransportMode(mode);
+  }
+  const transportModal = document.getElementById("transport-selection-modal");
+  if (transportModal) transportModal.classList.add("hide");
+
+  const langModal = document.getElementById("lang-selection-modal");
+  if (langModal) langModal.classList.remove("hide");
+};
+
+const openTransportModal = () => {
+  const transportModal = document.getElementById("transport-selection-modal");
+  if (transportModal) transportModal.classList.remove("hide");
+};
+
 const handleMap = () => {
+  if (typeof window.updateMapSidePanelsForMode === 'function') {
+    window.updateMapSidePanelsForMode(window.state?.transportMode || 'aviation');
+  }
   if (typeof window.showModal === 'function') {
     window.showModal("map-modal");
   }
 };
 
 const handleFlights = () => {
+  if (typeof window.setTransportMode === 'function') {
+    window.setTransportMode(window.state?.transportMode || 'aviation');
+  }
   if (typeof window.loadFlightsToTable === 'function') {
     window.loadFlightsToTable();
   }
@@ -81,6 +103,9 @@ const hideModal = (e) => {
     <header>
       <div class="logo-text">ACCESS</div>
       <div id="status-bar">
+        <button type="button" class="transport-switch-btn" @click="openTransportModal" title="Transport turini o'zgartirish">
+          <i class="fas fa-route"></i> Yo'nalish
+        </button>
         <button id="weather-temp-btn" class="weather-temp-btn" @click="handleWeather">
           <i class="fas fa-cloud-sun"></i>
           <span id="toshkent-temp">--°C</span>
@@ -280,8 +305,45 @@ const hideModal = (e) => {
   <video id="webcam" autoplay muted playsinline style="display:none;"></video>
   <canvas id="recognition-overlay" style="display:none;"></canvas>
 
-  <!-- Boshlang'ich Til Tanlash Modali -->
-  <div id="lang-selection-modal" class="modal lang-modal-overlay">
+  <!-- Boshlang'ich Transport Yo'nalishini Tanlash Modali -->
+  <div id="transport-selection-modal" class="modal lang-modal-overlay">
+    <div class="transport-selection-content glass">
+      <div class="lang-header">
+        <h2>TRANSPORT YO'NALISHINI TANLANG</h2>
+        <p style="opacity: 0.7; font-size: 0.95rem; margin-top: 5px;">Kerakli transport turini belgilang</p>
+        <div class="header-line"></div>
+      </div>
+      
+      <div class="transport-grid">
+        <button class="transport-card aviation-card" @click="handleTransportSelect('aviation')">
+          <div class="transport-icon-box">
+            <i class="fas fa-plane"></i>
+          </div>
+          <div class="transport-name">1. Aviatsiya</div>
+          <div class="transport-desc">Aeroport va parvozlar jadvali (TAS)</div>
+        </button>
+
+        <button class="transport-card railway-card" @click="handleTransportSelect('railway')">
+          <div class="transport-icon-box">
+            <i class="fas fa-train"></i>
+          </div>
+          <div class="transport-name">2. Temir Yo'llari</div>
+          <div class="transport-desc">Vokzal va poyezdlar jadvali (Afrosiyob, Sharq)</div>
+        </button>
+
+        <button class="transport-card bus-card" @click="handleTransportSelect('bus')">
+          <div class="transport-icon-box">
+            <i class="fas fa-bus"></i>
+          </div>
+          <div class="transport-name">3. Avtobuslar</div>
+          <div class="transport-desc">Avtovokzal va shaharlararo reyslar</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Til Tanlash Modali -->
+  <div id="lang-selection-modal" class="modal lang-modal-overlay hide">
     <div class="lang-selection-content glass">
       <div class="lang-header">
         <h2>TILNI TANLANG / ВЫБЕРИТЕ ЯЗЫК / SELECT LANGUAGE</h2>

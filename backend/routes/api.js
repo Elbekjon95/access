@@ -81,10 +81,230 @@ async function fetchLiveFlights() {
     return allFlights;
 }
 
+function fetchRailwaySchedules() {
+    return [
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Samarqand - Buxoro',
+            flight_no: '762F "Afrosiyob"', time: '07:00',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-9 (Kassa 1-4)',
+            status: 'Registratsiya ochiq'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Qarshi - Shahrisabz',
+            flight_no: '764F "Afrosiyob"', time: '08:30',
+            gate: 'Peron 2', checkin_counters: 'Vagon 1-8 (Kassa 2)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Janubiy (Vokzal)', to: 'Andijon - Marg\'ilon',
+            flight_no: '060F "Toshkent-Andijon"', time: '09:15',
+            gate: 'Peron 3', checkin_counters: 'Vagon 1-12 (Kassa 5-8)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Buxoro - Samarqand',
+            flight_no: '766F "Afrosiyob"', time: '09:45',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-9 (Kassa 1-3)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Urganch - Xiva',
+            flight_no: '056F "Toshkent-Xiva"', time: '14:20',
+            gate: 'Peron 4', checkin_counters: 'Vagon 1-14 (Kassa 9-10)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Samarqand Express',
+            flight_no: '752F "Express"', time: '17:10',
+            gate: 'Peron 2', checkin_counters: 'Vagon 1-10 (Kassa 3)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Shimoliy (Vokzal)', to: 'Buxoro - Xiva',
+            flight_no: '662F "Sharq"', time: '18:45',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-10 (Kassa 1-3)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Janubiy (Vokzal)', to: 'Termiz - Denov',
+            flight_no: '379F "Toshkent-Termiz"', time: '19:30',
+            gate: 'Peron 3', checkin_counters: 'Vagon 1-16 (Kassa 7-8)',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Buxoro - Samarqand', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '761F "Afrosiyob"', time: '11:40',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-9',
+            status: 'Keldi'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Qarshi - Shahrisabz', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '763F "Afrosiyob"', time: '13:15',
+            gate: 'Peron 2', checkin_counters: 'Vagon 1-8',
+            status: 'Keldi'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Andijon - Qo\'qon', to: 'Toshkent Janubiy (Vokzal)',
+            flight_no: '059F "Andijon-Toshkent"', time: '15:20',
+            gate: 'Peron 3', checkin_counters: 'Vagon 1-12',
+            status: 'Yo\'lda (Kechikmoqda)'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Buxoro - Samarqand', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '765F "Afrosiyob"', time: '16:50',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-9',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Termiz - Qarshi', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '380F "Termiz Express"', time: '20:10',
+            gate: 'Peron 4', checkin_counters: 'Vagon 1-14',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Xiva - Urganch - Navoiy', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '055F "Xiva-Toshkent"', time: '21:40',
+            gate: 'Peron 2', checkin_counters: 'Vagon 1-14',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: "Nukus - Qo'ng'irot", to: "Toshkent Shimoliy (Vokzal)",
+            flight_no: '053F "Nukus-Toshkent"', time: '22:30',
+            gate: 'Peron 3', checkin_counters: 'Vagon 1-15',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Almaty (Qozog\'iston)', to: 'Toshkent Shimoliy (Vokzal)',
+            flight_no: '001F "Almaty-Tashkent"', time: '23:15',
+            gate: 'Peron 1', checkin_counters: 'Vagon 1-12',
+            status: 'Xalqaro Reys'
+        }
+    ];
+}
+
+function fetchBusSchedules() {
+    return [
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Samarqand (Markaziy)',
+            flight_no: 'BUS-101 "Oltin Vadi"', time: '06:30',
+            gate: 'Platforma 2', checkin_counters: 'Chiptaxona 1-3',
+            status: 'Chiptalar sotilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Farg\'ona - Marg\'ilon',
+            flight_no: 'BUS-204 "Vodiy Express"', time: '08:00',
+            gate: 'Platforma 4', checkin_counters: 'Chiptaxona 4-5',
+            status: 'Peronda (Minish ochiq)'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Buxoro - Kogon',
+            flight_no: 'BUS-305 "Buxoro Trans"', time: '10:15',
+            gate: 'Platforma 1', checkin_counters: 'Chiptaxona 2-4',
+            status: 'Chiptalar sotilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Guliston - Yangiyer',
+            flight_no: 'BUS-109 "Sirdaryo Liners"', time: '11:30',
+            gate: 'Platforma 6', checkin_counters: 'Chiptaxona 1',
+            status: 'Chiptalar sotilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Namangan (Avtovokzal)',
+            flight_no: 'BUS-408 "Namangan Liners"', time: '14:30',
+            gate: 'Platforma 5', checkin_counters: 'Chiptaxona 6',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Andijon (Avtovokzal)',
+            flight_no: 'BUS-208 "Andijon Express"', time: '16:00',
+            gate: 'Platforma 4', checkin_counters: 'Chiptaxona 4-5',
+            status: 'Chiptalar sotilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Qarshi - Shahrisabz',
+            flight_no: 'BUS-502 "Nasaf Avto"', time: '17:00',
+            gate: 'Platforma 3', checkin_counters: 'Chiptaxona 1-2',
+            status: 'Chiptalar sotilmoqda'
+        },
+        {
+            type: 'departure', movement: 'DEPARTURE',
+            from: 'Toshkent Central Avtovokzal', to: 'Urganch - Xiva',
+            flight_no: 'BUS-601 "Xorazm Trans"', time: '19:00',
+            gate: 'Platforma 1', checkin_counters: 'Chiptaxona 3-4',
+            status: 'Kutilmoqda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Samarqand Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-102 "Samarqand-Tashkent"', time: '12:15',
+            gate: 'Platforma 2', checkin_counters: 'Peron 2',
+            status: 'Yetib keldi'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Guliston Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-110 "Sirdaryo-Tashkent"', time: '14:00',
+            gate: 'Platforma 6', checkin_counters: 'Peron 6',
+            status: 'Yetib keldi'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Andijon Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-206 "Vodiy-Tashkent"', time: '16:40',
+            gate: 'Platforma 4', checkin_counters: 'Peron 4',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Namangan Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-409 "Namangan-Tashkent"', time: '18:20',
+            gate: 'Platforma 5', checkin_counters: 'Peron 5',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Buxoro Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-306 "Buxoro-Tashkent"', time: '20:00',
+            gate: 'Platforma 1', checkin_counters: 'Peron 1',
+            status: 'Yo\'lda'
+        },
+        {
+            type: 'arrival', movement: 'ARRIVAL',
+            from: 'Qarshi Avtovokzal', to: 'Toshkent Central Avtovokzal',
+            flight_no: 'BUS-503 "Nasaf-Tashkent"', time: '21:30',
+            gate: 'Platforma 3', checkin_counters: 'Peron 3',
+            status: 'Yo\'lda'
+        }
+    ];
+}
+
 // Chat Endpoint
 router.post(['/chat.php', '/chat'], async (req, res) => {
     try {
-        const { message, language } = req.body;
+        const { message, language, transportMode = 'aviation' } = req.body;
         if (!message) return res.status(400).json({ error: 'Xabar yuborilmadi' });
         
         const apiKey = process.env.GEMINI_API_KEY;
@@ -92,46 +312,34 @@ router.post(['/chat.php', '/chat'], async (req, res) => {
             return res.json({ reply: `[Express] Xabaringiz qabul qilindi: ${message}. (Sozlamalarda Gemini API kalit topilmadi)`, intent: 'general' });
         }
 
-        const flights = await fetchLiveFlights();
+        let flights = [];
+        if (transportMode === 'railway') {
+            flights = fetchRailwaySchedules();
+        } else if (transportMode === 'bus') {
+            flights = fetchBusSchedules();
+        } else {
+            flights = await fetchLiveFlights();
+        }
         
         // Toshkent vaqtini olish
         const now = new Date();
         const tasTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tashkent"}));
         const nowMin = tasTime.getHours() * 60 + tasTime.getMinutes();
 
-        // Reyslarni vaqt bo'yicha saralash va 6 soatlik oynaga filtrlaymiz
+        // Reyslarni vaqt bo'yicha saralash
         const sortedFlights = flights
             .filter(f => {
                 try {
                     const [h, m] = f.time.split(':').map(Number);
                     const fMin = h * 60 + m;
                     let diff = fMin - nowMin;
-                    
-                    if (diff < -120) diff += 1440; // Keyingi kun uchun
-
-                    // Status bo'yicha qo'shimcha logic
-                    const s = (f.status || "").toLowerCase();
-                    const isStillActive = s.includes("delayed") || s.includes("kechik") || s.includes("boarding") || s.includes("gate") || s.includes("check");
-                    
-                    // O'tib ketgan bo'lsa ham, agar 90 daqiqa ichida bo'lsa yoki statusi faol bo'lsa qoldiramiz
-                    if (diff < 0) {
-                        return diff >= -90 || isStillActive; 
-                    }
-                    
-                    return diff <= 360; // Faqat yaqin 6 soat
+                    if (diff < -120) diff += 1440;
+                    return true;
                 } catch (e) { return true; }
-            })
-            .sort((a, b) => {
-                try {
-                    const [h1, m1] = a.time.split(':').map(Number);
-                    const [h2, m2] = b.time.split(':').map(Number);
-                    return (h1 * 60 + m1) - (h2 * 60 + m2);
-                } catch (e) { return 0; }
             });
 
-        const shortFlights = sortedFlights.slice(0, 80); // Context uchun yetarli hajm
+        const shortFlights = sortedFlights.slice(0, 80);
         
-        // Knowledge base yuklash
         let knowledgeBase = "";
         try {
             const kbPath = path.resolve('data/knowledge_base.txt');
@@ -140,36 +348,36 @@ router.post(['/chat.php', '/chat'], async (req, res) => {
             }
         } catch (e) { console.error('Knowledge Base error:', e.message); }
 
-        const sysInstruction = `Sen Toshkent xalqaro aeroportining (TAS) aqlli rasmiy dispatcher-san. 
+        let modeSystemRole = "";
+        if (transportMode === 'railway') {
+            modeSystemRole = "Sen O'zbekiston Temir yo'llari (Vokzal) ning aqlli rasmiy dispatcher-san. Poyezdlar jadvali, poyezd reyslari (Afrosiyob, Sharq, Nasaf va b.), peronlar va vagonlar haqida ma'lumot berasan.";
+        } else if (transportMode === 'bus') {
+            modeSystemRole = "Sen Toshkent Markaziy Avtovokzalining aqlli rasmiy dispatcher-san. Shaharlararo avtobus reyslari, platformalar, chiptalar sotuvi va yo'nalishlar bo'yicha ma'lumot berasan.";
+        } else {
+            modeSystemRole = "Sen Toshkent xalqaro aeroportining (TAS) aqlli rasmiy dispatcher-san. Parvozlar jadvali, uchish/kelish terminali, stoykalar va gate-lar bo'yicha ma'lumot berasan.";
+        }
+
+        const sysInstruction = `${modeSystemRole}
 MIJOZNING TANLAGAN TILI: "${language || 'uz'}"
+TRANSPORT REJIMI: "${transportMode}"
 
 DIQQAT: Sen faqat "${language || 'uz'}" tilida javob berishing SHART. 
 
-REYSLAR HAQIDA MUHIM:
-Senga faqat hozirgi vaqtdan boshlab yaqin 6 soat ichidagi reyslar ro'yxati berilgan. 
-Agar mijoz so'ragan shahar bo'yicha reys topilmasa, "Yaqin 6 soat ichida bu yo'nalishda reyslar mavjud emas" deb javob ber.
+REYSLAR / QATNOVLAR HAQIDA MUHIM:
+Senga hozirgi vaqtdagi reyslar va qatnovlar ro'yxati berilgan. 
+Agar mijoz so'ragan shahar bo'yicha qatnov topilmasa, "Hozirda bu yo'nalishda qatnovlar mavjud emas" deb javob ber.
 Mijoz savoli: "${message}"
 
 QAYTARISH QOIDALARI (FaQAT JSON QAYTAR):
 Barcha javoblaring qisqa 1-2 gapdan iborat bo'lsin.
- Agar topilgan qatnov haqida gapirsan, uning holatiga qarab javob ber:
-- Agar DEPARTURE (uchish) bo'lsa: "reysi 16:50 da uchib ketadi. Registratsiya 16-18 stoykalarida ochiq" deb ayt.
-- Agar ARRIVAL (uchib kelish) bo'lsa: "reysi 14:20 da qo'nadi. Yuklarni olish 4-karuselda" deb ayt (agar karusel/gate ma'lumoti bo'lsa).
-Agar biror shaharga reys haqida ma'lumot bersang, o'sha shahardagi hozirgi ob-havoni ham o'sha tilda javobing oxiriga qo'shib ayt.
-
 Javobing quyidagi JSON strukturada bo'lishi shart:
 {
   "reply": "xabar",
-  "show_earth_route": true/false (agar biror aniq shaharga reys haqida gapirsang true qil),
-  "origin": "TAS",
-  "destination": "uchish shahri (faqat aniq kodi, masalan DME, VKO, ICN)",
-  "location": "faqat agar mijoz bino ichidagi obyekt (masjid, zal, hojatxona) qayerdaligini so'rasa shu nomni yoz. DIQQAT: Agar savol REYSLAR haqida bo'lsa (uchish, kelish, stoykalar) bu qatorni mutlaqo null qoldir!"
+  "show_earth_route": false,
+  "location": null
 }
 
-BILIMLAR BAZASI (Xizmatlar, narxlar va qoidalar):
-${knowledgeBase}
-
-Faol reyslar ro'yxati (bu ma'lumotdan foydalan):
+Faol qatnovlar ro'yxati (bu ma'lumotdan foydalan):
 ${JSON.stringify(shortFlights)}`;
 
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -186,8 +394,6 @@ ${JSON.stringify(shortFlights)}`;
         
         try {
             const parsed = JSON.parse(aiText);
-            
-            // Chatni bazaga saqlash
             try {
                 await Chat.create({
                     user_message: message,
@@ -204,18 +410,34 @@ ${JSON.stringify(shortFlights)}`;
         }
     } catch (error) {
         console.error("Chat Error:", error?.response?.data || error.message);
-        res.status(500).json({ error: 'Ichki tizim xatosi yuz berdi' });
+        const { message, language, transportMode = 'aviation' } = req.body || {};
+        let fallbackMsg = "Ma'lumotlar jadvalidan kerakli reysni ko'rishingiz mumkin.";
+        if (transportMode === 'railway') {
+            fallbackMsg = "Temir yo'llari bo'yicha ma'lumot: Reyslar jadvali bo'limidan poyezdlar va peronlar haqida aniq ma'lumot olishingiz mumkin.";
+        } else if (transportMode === 'bus') {
+            fallbackMsg = "Avtobus reyslari bo'yicha ma'lumot: Reyslar jadvali bo'limidan platformalar va chiptaxona ma'lumotlarini olishingiz mumkin.";
+        } else {
+            fallbackMsg = "Aeroport parvozlari bo'yicha ma'lumot: Reyslar jadvali bo'limidan uchish va kelish vaqtlarini aniqlashingiz mumkin.";
+        }
+        res.json({ reply: fallbackMsg });
     }
 });
 
-// Flights Scraping Endpoint
+// Flights / Schedules Scraping Endpoint
 router.get(['/flights.php', '/flights'], async (req, res) => {
     try {
-        const allFlights = await fetchLiveFlights();
-        res.json(allFlights);
+        const mode = req.query.mode || 'aviation';
+        if (mode === 'railway') {
+            return res.json(fetchRailwaySchedules());
+        } else if (mode === 'bus') {
+            return res.json(fetchBusSchedules());
+        } else {
+            const allFlights = await fetchLiveFlights();
+            return res.json(allFlights);
+        }
     } catch (error) {
         console.error('Scraping error:', error);
-        res.status(500).json({ error: 'Server xatosi: uzairports ishlamayapti' });
+        res.status(500).json({ error: 'Server xatosi' });
     }
 });
 

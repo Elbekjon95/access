@@ -13,6 +13,7 @@ export const MIC_GAIN = 1.8;
 export const state = {
   isRecording: false,
   currentLanguage: "uz",
+  transportMode: "aviation", // 'aviation', 'railway', 'bus'
   mapViewState: { scale: 1, panX: 0, panY: 0 },
   mapPanZoomReady: false,
   lastUserMessage: "",
