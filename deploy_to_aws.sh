@@ -8,11 +8,12 @@ set -e
 DOMAIN="elbekroxmonov.uz"
 PROJECT_DIR="/home/ubuntu/access"
 
-# Home directory ruxsatlarini to'g'rilash (Nginx 500 error ni oldini olish uchun)
+# Home directory ruxsatlarini to'g'rilash
 sudo chmod 755 /home/ubuntu
-
-echo "=== 1. Git loyihasini olish / yangilash ==="
 if [ -d "$PROJECT_DIR" ]; then
+    sudo chown -R ubuntu:ubuntu "$PROJECT_DIR"
+    sudo rm -rf "$PROJECT_DIR/frontend/dist"
+fi
     echo "Loyiha papkasi mavjud, git pull qilinmoqda..."
     cd "$PROJECT_DIR"
     git pull origin main || true
