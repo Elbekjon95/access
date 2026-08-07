@@ -414,10 +414,8 @@ class AirportNavigation {
       if (busContainer) busContainer.style.display = 'block';
       if (this.canvas) this.canvas.style.display = 'none';
       this.initLeafletMap();
-      if (!this.busAutoFetched) {
-        this.busAutoFetched = true;
-        this.updateLeafletRoute('115-Avtobus');
-      }
+      this.isSingleRouteMode = false;
+      this.startLiveBusTrackingLoop();
     } else {
       if (busContainer) busContainer.style.display = 'none';
       if (this.canvas) this.canvas.style.display = 'block';
@@ -752,15 +750,10 @@ class AirportNavigation {
       this.leafletRouteLayer = L.layerGroup().addTo(this.leafletMapInstance);
       this.leafletBusMarkersLayer = L.layerGroup().addTo(this.leafletMapInstance);
 
-      // Hide bus markers when zoomed out (< 15) in general mode only!
+      // Refresh live bus tracking loop on moveend / zoomend
       this.leafletMapInstance.on('zoomend moveend', () => {
-        // DO NOT CLEAR MARKERS WHEN A SINGLE ROUTE IS SELECTED!
-        if (this.isSingleRouteMode) return;
-
-        const zoom = this.leafletMapInstance.getZoom();
-        if (zoom < 15 && this.leafletBusMarkersLayer) {
-          this.leafletBusMarkersLayer.clearLayers();
-          if (this.busMarkerMap) this.busMarkerMap.clear();
+        if (!this.isSingleRouteMode) {
+          this.startLiveBusTrackingLoop();
         }
       });
     }
@@ -1165,13 +1158,7 @@ class AirportNavigation {
       const busContainer = document.getElementById('leaflet-bus-map');
       if (!busContainer || busContainer.style.display === 'none') return;
 
-      const currentZoom = this.leafletMapInstance.getZoom();
-      // Hide bus markers when zoomed out (< 15) to ensure 100% clean city map view!
-      if (currentZoom < 15) {
-        if (this.leafletBusMarkersLayer) this.leafletBusMarkersLayer.clearLayers();
-        this.busMarkerMap.clear();
-        return;
-      }
+      // Live bus tracking showing all active buses in viewport bounds
 
       // Get exact Lat/Lng bounds of visible screen viewport
       const bounds = this.leafletMapInstance.getBounds();
