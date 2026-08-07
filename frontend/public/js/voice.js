@@ -763,7 +763,9 @@ function startVAD(context, sourceNode) {
     const now = performance.now();
 
     if (now < warmupUntil) {
-      noiseFloor = noiseFloor * 0.9 + smoothedRms * 0.1;
+      if (smoothedRms < VAD_CONFIG.minRms * 2.5) {
+        noiseFloor = noiseFloor * 0.9 + smoothedRms * 0.1;
+      }
       threshold = Math.max(
         VAD_CONFIG.minRms,
         noiseFloor * VAD_CONFIG.thresholdFactor,

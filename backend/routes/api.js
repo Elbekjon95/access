@@ -843,11 +843,12 @@ const postSttHandler = async (req, res) => {
                 const cleanUzText = uzText ? uzText.trim() : '';
 
                 // Known Whisper / UzbekVoice silence hallucination artifacts
-                const hallucinations = ["xo'p.", "xo'p", "qo'ng'iroqqa.", "qo'ng'iroq uchun.", "rahmat."];
-                const isHallucination = hallucinations.includes(cleanUzText.toLowerCase());
+                const lowerText = cleanUzText.toLowerCase().replace(/[^a-zʻ’'\s]/g, '').trim();
+                const hallucinations = ["xo'p", "xop", "xo'p xo'p", "xop xop", "qo'ng'iroqqa", "qo'ng'iroq uchun", "rahmat", "subtitles"];
+                const isHallucination = hallucinations.includes(lowerText) || /^(\s*x[o'’`]*p\s*)+$/i.test(lowerText);
 
                 if (cleanUzText && !isHallucination) {
-                    console.log(`[UzbekVoice STT] Success (${process.env.UZBEKVOICE_STT_MODEL || 'general'}): "${cleanUzText}"`);
+                    console.log(`[UzbekVoice STT] Success (enhanced-stt): "${cleanUzText}"`);
                     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
                     return res.json({ text: cleanUzText, language: langCode, engine: 'uzbekvoice-stt' });
                 }
