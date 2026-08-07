@@ -6,7 +6,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/acsess
 
 export const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(MONGODB_URI);
+        const conn = await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 2000
+        });
         console.log(`[MongoDB] Muvaffaqiyatli ulandi: ${conn.connection.host}`);
     } catch (error) {
         console.warn(`[MongoDB Warning] Ulanishda ogohlantirish: ${error.message}. Server to'xtamaydi.`);
