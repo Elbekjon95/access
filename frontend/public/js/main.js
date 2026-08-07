@@ -290,15 +290,12 @@ export function updateMapSidePanelsForMode(mode = 'aviation') {
         if (rightHeader) {
             rightHeader.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
-                    <div style="display:flex; background:rgba(0,0,0,0.4); border-radius:8px; padding:3px; border:1px solid rgba(0,229,255,0.3);">
-                        <button id="btn-bus-nearby-tab" class="bus-tab-btn active" style="flex:1; padding:6px 4px; border:none; background:#00e5ff; color:#000; font-weight:bold; font-size:11px; border-radius:6px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:4px;">
-                            <i class="fas fa-map-marker-alt"></i> Yaqin Avtobuslar
-                        </button>
-                        <button id="btn-bus-all-tab" class="bus-tab-btn" style="flex:1; padding:6px 4px; border:none; background:transparent; color:#fff; font-weight:bold; font-size:11px; border-radius:6px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0;">
+                        <span style="font-weight:bold; font-size:13px; color:#00e5ff; display:flex; align-items:center; gap:6px;">
                             <i class="fas fa-list"></i> Barcha Marshrutlar
-                        </button>
+                        </span>
                     </div>
-                    <div id="bus-search-wrapper" style="position:relative; width:100%; display:none;">
+                    <div id="bus-search-wrapper" style="position:relative; width:100%; display:block;">
                         <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#00e5ff; font-size:12px;"></i>
                         <input id="bus-search-input" type="text" placeholder="Qidirish (115, 28, 40)..." style="width:100%; padding:6px 10px 6px 30px; background:rgba(0,229,255,0.12); border:1px solid rgba(0,229,255,0.4); border-radius:6px; color:#fff; font-size:12px; outline:none; font-family:inherit;" />
                     </div>
@@ -306,32 +303,8 @@ export function updateMapSidePanelsForMode(mode = 'aviation') {
             `;
         }
 
-        const nearbyTabBtn = document.getElementById('btn-bus-nearby-tab');
-        const allTabBtn = document.getElementById('btn-bus-all-tab');
-        const searchWrapper = document.getElementById('bus-search-wrapper');
-
-        if (nearbyTabBtn && allTabBtn) {
-            nearbyTabBtn.onclick = () => {
-                nearbyTabBtn.style.background = '#00e5ff';
-                nearbyTabBtn.style.color = '#000';
-                allTabBtn.style.background = 'transparent';
-                allTabBtn.style.color = '#fff';
-                if (searchWrapper) searchWrapper.style.display = 'none';
-                loadNearbyBusesToPanel(listGates);
-            };
-
-            allTabBtn.onclick = () => {
-                allTabBtn.style.background = '#00e5ff';
-                allTabBtn.style.color = '#000';
-                nearbyTabBtn.style.background = 'transparent';
-                nearbyTabBtn.style.color = '#fff';
-                if (searchWrapper) searchWrapper.style.display = 'block';
-                loadAllBusRoutesToPanel(listGates);
-            };
-        }
-
-        // Default load Nearby Buses
-        loadNearbyBusesToPanel(listGates);
+        // Direct load All Bus Routes
+        loadAllBusRoutesToPanel(listGates);
 
     } else {
         if (leftPanel) leftPanel.style.display = "flex";

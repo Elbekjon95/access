@@ -416,7 +416,7 @@ class AirportNavigation {
       this.initLeafletMap();
       if (!this.busAutoFetched) {
         this.busAutoFetched = true;
-        this.updateLeafletNearbyBuses(41.2579, 69.2812, 5.0);
+        this.updateLeafletRoute('115-Avtobus');
       }
     } else {
       if (busContainer) busContainer.style.display = 'none';
