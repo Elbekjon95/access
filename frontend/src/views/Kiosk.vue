@@ -241,6 +241,9 @@ const hideModal = (e) => {
           <button class="flight-tab-btn" data-type="arrival">
             <i class="fas fa-plane-arrival"></i> Uchib kelish
           </button>
+          <button class="flight-tab-btn" data-type="schedule" style="display: none;">
+            <i class="fas fa-route"></i> Yo'nalishlar Grafigi
+          </button>
         </div>
         <table id="flights-table">
           <thead>

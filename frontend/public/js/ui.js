@@ -138,9 +138,13 @@ export async function loadFlightsToTable(filterType = "departure") {
   const tableHeaderRow = document.querySelector("#flights-table thead tr");
   if (tableHeaderRow) {
     if (mode === "railway") {
-      tableHeaderRow.innerHTML = `<th>Poyezd №</th><th>Yo'nalish</th><th>Vaqt</th><th>Peron</th><th>Vagon / Kassa</th><th>Holat</th>`;
+      tableHeaderRow.innerHTML = filterType === "schedule"
+        ? `<th>Poyezd №</th><th>Yo'nalish</th><th>Qatnov vaqti / Interval</th><th>Peron / Yo'l</th><th>Vagon turi</th><th>Holat</th>`
+        : `<th>Poyezd №</th><th>Yo'nalish</th><th>Vaqt</th><th>Peron</th><th>Vagon / Kassa</th><th>Holat</th>`;
     } else if (mode === "bus") {
-      tableHeaderRow.innerHTML = `<th>Avtobus №</th><th>Yo'nalish</th><th>Vaqt</th><th>Platforma</th><th>Chiptaxona</th><th>Holat</th>`;
+      tableHeaderRow.innerHTML = filterType === "schedule"
+        ? `<th>Avtobus №</th><th>Yo'nalish / Liniya</th><th>Qatnov vaqti / Interval</th><th>Bekat / Platforma</th><th>Liniya turi</th><th>Holat</th>`
+        : `<th>Avtobus №</th><th>Yo'nalish</th><th>Vaqt</th><th>Platforma</th><th>Chiptaxona</th><th>Holat</th>`;
     } else {
       tableHeaderRow.innerHTML = `<th>Reys №</th><th>Yo'nalish</th><th>Vaqt</th><th>Gate</th><th>Stoyka</th><th>Holat</th>`;
     }
@@ -165,15 +169,19 @@ export async function loadFlightsToTable(filterType = "departure") {
     }
     if (Array.isArray(flights)) {
       const filteredFlights = flights.filter((f) => {
+        if (filterType === "schedule") {
+          return f.type === "schedule" || f.movement === "SCHEDULE";
+        }
         const isArr =
           f.type === "arrival" ||
           f.movement === "ARRIVAL" ||
           (f.to && (f.to.includes("TAS") || f.to.includes("Toshkent Shimoliy") || f.to.includes("Toshkent Central")));
-        return filterType === "arrival" ? isArr : !isArr;
+        return filterType === "arrival" ? isArr : (!isArr && f.type !== "schedule" && f.movement !== "SCHEDULE");
       });
 
       if (filteredFlights.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Hozircha ${filterType === "arrival" ? "keladigan" : "ketadigan"} reyslar yo'q.</td></tr>`;
+        const noDataLabel = filterType === "arrival" ? "keladigan" : filterType === "schedule" ? "yo'nalishlar grafigi" : "ketadigan";
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Hozircha ${noDataLabel} reyslar yo'q.</td></tr>`;
       } else {
         filteredFlights.forEach((f) => {
           const tr = document.createElement("tr");
@@ -182,11 +190,16 @@ export async function loadFlightsToTable(filterType = "departure") {
           let routeHtml = "";
           let iconClass = "fa-plane";
           if (mode === "railway") iconClass = "fa-train";
-          else if (mode === "bus") iconClass = "fa-bus";
+          else if (mode === "bus") iconClass = f.type === "schedule" ? "fa-route" : "fa-bus";
           else iconClass = f.type === "arrival" ? "fa-plane-arrival" : "fa-plane-departure";
 
+          const isSchedule = f.type === "schedule" || f.movement === "SCHEDULE";
           const isArr = f.type === "arrival" || f.movement === "ARRIVAL";
-          if (isArr) {
+
+          if (isSchedule) {
+            directionBadge = '<span style="color:#a855f7; font-weight:bold;">[GRAFIK]</span>';
+            routeHtml = `<strong>${f.from}</strong> <i class="fas ${iconClass}" style="margin:0 5px;color:#a855f7"></i> <strong>${f.to}</strong>`;
+          } else if (isArr) {
             directionBadge = '<span style="color:#00e5ff; font-weight:bold;">[KELISH]</span>';
             routeHtml = `<strong>${f.from}</strong> <i class="fas ${iconClass}" style="margin:0 5px;color:#00e5ff"></i> ${f.to}`;
           } else {
@@ -194,8 +207,9 @@ export async function loadFlightsToTable(filterType = "departure") {
             routeHtml = `${f.from} <i class="fas ${iconClass}" style="margin:0 5px;color:#ffcc00"></i> <strong>${f.to}</strong>`;
           }
 
-          const statusClass =
-            f.status && (f.status.toLowerCase().includes("uchib") || f.status.toLowerCase().includes("yo'lga"))
+          const statusClass = isSchedule
+            ? 'style="background:rgba(168,85,247,0.2); color:#c084fc;"'
+            : f.status && (f.status.toLowerCase().includes("uchib") || f.status.toLowerCase().includes("yo'lga"))
               ? 'style="background:rgba(255,82,82,0.2);"'
               : 'style="background:rgba(0,198,255,0.2);"';
 

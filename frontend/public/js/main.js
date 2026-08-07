@@ -59,6 +59,7 @@ export function setTransportMode(mode) {
   // Modal Tab tugmalarini yangilash
   const departureTabBtn = document.querySelector('.flight-tab-btn[data-type="departure"]');
   const arrivalTabBtn = document.querySelector('.flight-tab-btn[data-type="arrival"]');
+  const scheduleTabBtn = document.querySelector('.flight-tab-btn[data-type="schedule"]');
 
   if (mode === 'railway') {
     if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-train" style="margin-right: 8px; color: #00e5ff;"></i> ACCESS RAILWAY`;
@@ -68,6 +69,10 @@ export function setTransportMode(mode) {
 
     if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-train"></i> JO'NASH POYEZDLARI`;
     if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-train"></i> KELISH POYEZDLARI`;
+    if (scheduleTabBtn) {
+      scheduleTabBtn.style.display = 'inline-flex';
+      scheduleTabBtn.innerHTML = `<i class="fas fa-clock"></i> POYEZDLAR GRAFIGI`;
+    }
 
   } else if (mode === 'bus') {
     if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-bus" style="margin-right: 8px; color: #ffcc00;"></i> ACCESS BUS TERMINAL`;
@@ -77,6 +82,10 @@ export function setTransportMode(mode) {
 
     if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-bus"></i> JO'NASH AVTOBUSLARI`;
     if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-bus"></i> KELISH AVTOBUSLARI`;
+    if (scheduleTabBtn) {
+      scheduleTabBtn.style.display = 'inline-flex';
+      scheduleTabBtn.innerHTML = `<i class="fas fa-route"></i> AVTOBUSLAR GRAFIGI`;
+    }
 
   } else {
     if (logoText) logoText.innerHTML = `<i id="transport-header-icon" class="fas fa-plane" style="margin-right: 8px; color: #00c6ff;"></i> ACCESS AIRPORT`;
@@ -86,6 +95,9 @@ export function setTransportMode(mode) {
 
     if (departureTabBtn) departureTabBtn.innerHTML = `<i class="fas fa-plane-departure"></i> Uchib ketish`;
     if (arrivalTabBtn) arrivalTabBtn.innerHTML = `<i class="fas fa-plane-arrival"></i> Uchib kelish`;
+    if (scheduleTabBtn) {
+      scheduleTabBtn.style.display = 'none';
+    }
   }
 }
 window.setTransportMode = setTransportMode;

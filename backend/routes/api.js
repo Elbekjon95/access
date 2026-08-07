@@ -304,6 +304,49 @@ function fetchBusSchedules() {
             flight_no: 'BUS-503 "Nasaf-Tashkent"', time: '21:30',
             gate: 'Platforma 3', checkin_counters: 'Peron 3',
             status: 'Yo\'lda'
+        },
+        // --- Shahar va Shahar atrofi avtobus yo'nalishlari grafigi ---
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Chorsu Bozor - Metro Beruniy',
+            flight_no: 'BUS-28 "Central-Chorsu"', time: 'Interval: 8-10 min (06:00 - 22:30)',
+            gate: 'Bekat 1', checkin_counters: 'Shahar Liniyasi',
+            status: 'Qatnovda'
+        },
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Yunusobod 12-dahshat - Aeroport',
+            flight_no: 'BUS-67 "Aeroport Express"', time: 'Interval: 10-12 min (06:00 - 23:00)',
+            gate: 'Bekat 2', checkin_counters: 'Shahar Liniyasi',
+            status: 'Qatnovda'
+        },
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Qo\'yliq bozori - Sergeli 7',
+            flight_no: 'BUS-93 "Sergeli-Qo\'yliq"', time: 'Interval: 7-9 min (05:45 - 22:00)',
+            gate: 'Bekat 3', checkin_counters: 'Shahar Liniyasi',
+            status: 'Qatnovda'
+        },
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Buyuk Ipak Yo\'li - TTTU',
+            flight_no: 'BUS-115 "TTZ Express"', time: 'Interval: 12-15 min (06:15 - 21:45)',
+            gate: 'Bekat 4', checkin_counters: 'Shahar Liniyasi',
+            status: 'Qatnovda'
+        },
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Chirchiq shahar (Shahar atrofi)',
+            flight_no: 'BUS-522 "Toshkent-Chirchiq"', time: 'Interval: 15-20 min (06:00 - 20:30)',
+            gate: 'Bekat 5', checkin_counters: 'Shahar atrofi',
+            status: 'Qatnovda'
+        },
+        {
+            type: 'schedule', movement: 'SCHEDULE',
+            from: 'Toshkent Central Avtovokzal', to: 'Yangiyo\'l shahri (Shahar atrofi)',
+            flight_no: 'BUS-554 "Toshkent-Yangiyo\'l"', time: 'Interval: 10-15 min (06:00 - 21:00)',
+            gate: 'Bekat 6', checkin_counters: 'Shahar atrofi',
+            status: 'Qatnovda'
         }
     ];
 }
