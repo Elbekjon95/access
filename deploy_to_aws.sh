@@ -38,7 +38,7 @@ GEMINI_MODEL=gemini-2.5-flash
 GEMINI_STT_MODEL=gemini-2.5-flash
 GEMINI_TTS_MODEL=gemini-2.5-flash-tts-preview
 
-UZBEKVOICE_API_KEY=0339da5f-d50b-43c6-add1-a2de75ed26ef:10a96f0e-c05b-48c2-8725-9ca77ad04095
+UZBEKVOICE_API_KEY=YOUR_UZBEKVOICE_API_KEY_HERE
 
 FLIGHT_API_URL=https://bot.uzairports.com/api/awery/v2?key_token=lDLh3Wdawi7SLNtUn4iMA4QZn5SopdIZ&airport_code=TAS&flight_type=DEPARTURE&is_paxservice=0&is_local=0
 OPENWEATHER_API_KEY=632d58e8a4089f301e5451fa87f23d18

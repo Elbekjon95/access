@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import FormData from 'form-data';
+import mongoose from 'mongoose';
 
 import os from 'os';
 
@@ -419,14 +420,12 @@ ${JSON.stringify(shortFlights)}`;
         
         try {
             const parsed = JSON.parse(aiText);
-            try {
-                await Chat.create({
+            if (mongoose.connection.readyState === 1) {
+                Chat.create({
                     user_message: message,
                     ai_response: parsed.reply,
                     language: language || 'uz'
-                });
-            } catch (dbErr) {
-                console.error('Chatni bazaga saqlashda xato:', dbErr.message);
+                }).catch(dbErr => console.error('Chatni bazaga saqlashda xato:', dbErr.message));
             }
 
             res.json(parsed);
@@ -815,14 +814,59 @@ const postSttHandler = async (req, res) => {
             return res.status(400).json({ error: 'Audio fayl yuborilmadi' });
         }
 
+        const langCode = (req.body.language || 'uz').toLowerCase();
+        const uzbekVoiceKey = process.env.UZBEKVOICE_API_KEY;
+
+        // Try UzbekVoice STT for Uzbek audio
+        if (langCode === 'uz' && uzbekVoiceKey) {
+            try {
+                const formData = new FormData();
+                formData.append('file', fs.createReadStream(req.file.path), {
+                    filename: req.file.originalname || 'recording.wav',
+                    contentType: req.file.mimetype || 'audio/wav'
+                });
+                formData.append('language', 'uz');
+                formData.append('model', 'enhanced-stt');
+                formData.append('blocking', 'true');
+                formData.append('return_offsets', 'false');
+                formData.append('run_diarization', 'false');
+
+                const uzRes = await axios.post('https://uzbekvoice.ai/api/v1/stt', formData, {
+                    headers: {
+                        ...formData.getHeaders(),
+                        'Authorization': uzbekVoiceKey
+                    },
+                    timeout: 15000
+                });
+
+                const uzText = uzRes.data?.result?.text || uzRes.data?.text || (typeof uzRes.data?.result === 'string' ? uzRes.data.result : '');
+                const cleanUzText = uzText ? uzText.trim() : '';
+
+                // Known Whisper / UzbekVoice silence hallucination artifacts
+                const hallucinations = ["xo'p.", "xo'p", "qo'ng'iroqqa.", "qo'ng'iroq uchun.", "rahmat."];
+                const isHallucination = hallucinations.includes(cleanUzText.toLowerCase());
+
+                if (cleanUzText && !isHallucination) {
+                    console.log(`[UzbekVoice STT] Success (${process.env.UZBEKVOICE_STT_MODEL || 'general'}): "${cleanUzText}"`);
+                    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+                    return res.json({ text: cleanUzText, language: langCode, engine: 'uzbekvoice-stt' });
+                }
+                console.warn(`[UzbekVoice STT] Warning: Output "${cleanUzText}" detected as empty or hallucination artifact. Falling back to Gemini STT...`);
+            } catch (uzErr) {
+                console.error("[UzbekVoice STT Error]:", uzErr.response?.status, uzErr.response?.data || uzErr.message);
+                console.log("[UzbekVoice STT] Falling back to Gemini STT...");
+            }
+        }
+
+        // Fallback or non-Uzbek: Gemini STT
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: 'GEMINI_API_KEY .env faylida topilmadi' });
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            return res.status(500).json({ error: 'API kaliti topilmadi' });
         }
 
         const audioBuffer = fs.readFileSync(req.file.path);
         const base64Audio = audioBuffer.toString('base64');
-        const langCode = (req.body.language || 'uz').toLowerCase();
 
         let sttInstruction = `Ushbu ovozli xabarni (audio) diqqat bilan eshitib, undagi gaplarni "${langCode}" tilida matnga o'girib ber (transcription). Faqat matnni o'zini qaytar, hech qanday qo'shimcha izoh yozma.`;
         if (langCode === 'uz') {
@@ -876,8 +920,8 @@ const postSttHandler = async (req, res) => {
         if(req.file && fs.existsSync(req.file.path)) {
             try { fs.unlinkSync(req.file.path); } catch(e) {}
         }
-        console.error("Gemini STT Error Details: ", err.response?.status, err.response?.data || err.message);
-        const errorDetails = err.response?.data?.error?.message || err.message || 'Gemini STT xizmatida xatolik yuz berdi.';
+        console.error("STT Error Details: ", err.response?.status, err.response?.data || err.message);
+        const errorDetails = err.response?.data?.error?.message || err.message || 'STT xizmatida xatolik yuz berdi.';
         res.json({ error: errorDetails });
     }
 };

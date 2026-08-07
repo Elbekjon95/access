@@ -511,19 +511,19 @@ export async function startRecording() {
         noiseSuppression: true,
         autoGainControl: true,
         channelCount: 1,
-        sampleRate: 48000,
+        sampleRate: 16000,
       },
     });
 
     state.inputAudioContext = new (
       window.AudioContext || window.webkitAudioContext
-    )();
+    )({ sampleRate: 16000 });
     sampleRate = state.inputAudioContext.sampleRate;
     audioContextSource =
       state.inputAudioContext.createMediaStreamSource(stream);
     state.micHighpass = state.inputAudioContext.createBiquadFilter();
     state.micHighpass.type = "highpass";
-    state.micHighpass.frequency.value = 120;
+    state.micHighpass.frequency.value = 80;
 
     state.micCompressor = state.inputAudioContext.createDynamicsCompressor();
     state.micCompressor.threshold.value = -30;
