@@ -416,7 +416,7 @@ class AirportNavigation {
       this.initLeafletMap();
       if (!this.busAutoFetched) {
         this.busAutoFetched = true;
-        this.updateLeafletNearbyBuses(41.2917, 69.2844, 3.5);
+        this.updateLeafletNearbyBuses(41.2579, 69.2812, 5.0);
       }
     } else {
       if (busContainer) busContainer.style.display = 'none';
@@ -1109,7 +1109,7 @@ class AirportNavigation {
     this.routeAnimFrame = requestAnimationFrame(animateRouteBuses);
   }
 
-  async updateLeafletNearbyBuses(lat = 41.2917, lng = 69.2844, radius = 3.5) {
+  async updateLeafletNearbyBuses(lat = 41.2579, lng = 69.2812, radius = 5.0) {
     this.initLeafletMap();
     if (!this.leafletMapInstance || !window.L) return;
 

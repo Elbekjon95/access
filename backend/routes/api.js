@@ -679,9 +679,10 @@ router.get('/bus/vehicles.php', getBusVehiclesHandler);
 // GET /api/bus/nearby (Nearby live buses based on lat/lng)
 const getBusNearbyHandler = async (req, res) => {
     try {
-        const kioskLat = parseFloat(req.query.lat) || 41.2917;
-        const kioskLng = parseFloat(req.query.lng) || 69.2844;
-        const maxDistKm = parseFloat(req.query.radius) || 2.5;
+        // Tashkent International Airport Terminal 2 (Islam Karimov Airport)
+        const kioskLat = parseFloat(req.query.lat) || 41.2579;
+        const kioskLng = parseFloat(req.query.lng) || 69.2812;
+        const maxDistKm = parseFloat(req.query.radius) || 5.0;
 
         const token = await getTashbusToken();
         const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
@@ -742,6 +743,12 @@ const getBusNearbyHandler = async (req, res) => {
 
 router.get('/bus/nearby', getBusNearbyHandler);
 router.get('/bus/nearby.php', getBusNearbyHandler);
+
+// Catch-all fallback for any /bus/* requests so it ALWAYS returns JSON and NEVER returns HTML 404
+router.get('/bus/*', (req, res) => {
+    const local = getLocalBusData();
+    res.json({ success: true, source: 'fallback', data: local.vehicles || [] });
+});
 
 const postCaptureHandler = async (req, res) => {
     try {

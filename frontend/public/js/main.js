@@ -377,9 +377,10 @@ async function loadNearbyBusesToPanel(container) {
     container.innerHTML = '<div style="color:#00e5ff; padding:15px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Yaqin atrofingizdagi avtobuslar aniqlanmoqda...</div>';
 
     try {
-        const kioskLat = 41.2917;
-        const kioskLng = 69.2844;
-        const res = await fetch(`/api/bus/nearby?lat=${kioskLat}&lng=${kioskLng}&radius=2.5`).then(r => r.json());
+        // Tashkent International Airport Terminal 2 (Islam Karimov Airport)
+        const kioskLat = 41.2579;
+        const kioskLng = 69.2812;
+        const res = await fetch(`/api/bus/nearby?lat=${kioskLat}&lng=${kioskLng}&radius=5.0`).then(r => r.json());
 
         if (res.success && res.data && res.data.length > 0) {
             container.innerHTML = "";
