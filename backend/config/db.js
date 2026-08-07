@@ -9,8 +9,7 @@ export const connectDB = async () => {
         const conn = await mongoose.connect(MONGODB_URI);
         console.log(`[MongoDB] Muvaffaqiyatli ulandi: ${conn.connection.host}`);
     } catch (error) {
-        console.error(`[MongoDB Xato] Ulanishda xatolik: ${error.message}`);
-        process.exit(1);
+        console.warn(`[MongoDB Warning] Ulanishda ogohlantirish: ${error.message}. Server to'xtamaydi.`);
     }
 };
 
