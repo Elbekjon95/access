@@ -572,7 +572,7 @@ function normalizeRouteName(str) {
 }
 
 // GET /api/bus/routes (Route points and polylines)
-router.get(['/bus/routes.php', '/bus/routes'], async (req, res) => {
+const getBusRoutesHandler = async (req, res) => {
     try {
         const routeName = req.query.route || req.query.routeName;
         const token = await getTashbusToken();
@@ -621,10 +621,13 @@ router.get(['/bus/routes.php', '/bus/routes'], async (req, res) => {
     } catch(err) {
         res.status(500).json({ success: false, error: err.message });
     }
-});
+};
+
+router.get('/bus/routes', getBusRoutesHandler);
+router.get('/bus/routes.php', getBusRoutesHandler);
 
 // GET /api/bus/vehicles (Live vehicle positions)
-router.get(['/bus/vehicles.php', '/bus/vehicles'], async (req, res) => {
+const getBusVehiclesHandler = async (req, res) => {
     try {
         const routeName = req.query.route || req.query.routeName;
         const token = await getTashbusToken();
@@ -657,10 +660,13 @@ router.get(['/bus/vehicles.php', '/bus/vehicles'], async (req, res) => {
     } catch(err) {
         res.status(500).json({ success: false, error: err.message });
     }
-});
+};
+
+router.get('/bus/vehicles', getBusVehiclesHandler);
+router.get('/bus/vehicles.php', getBusVehiclesHandler);
 
 // GET /api/bus/nearby (Nearby live buses based on lat/lng)
-router.get(['/bus/nearby.php', '/bus/nearby'], async (req, res) => {
+const getBusNearbyHandler = async (req, res) => {
     try {
         const kioskLat = parseFloat(req.query.lat) || 41.2917;
         const kioskLng = parseFloat(req.query.lng) || 69.2844;
@@ -721,7 +727,10 @@ router.get(['/bus/nearby.php', '/bus/nearby'], async (req, res) => {
     } catch(err) {
         res.status(500).json({ success: false, error: err.message });
     }
-});
+};
+
+router.get('/bus/nearby', getBusNearbyHandler);
+router.get('/bus/nearby.php', getBusNearbyHandler);
 
 router.post(['/capture.php', '/capture'], async (req, res) => {
     try {
