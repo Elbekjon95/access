@@ -367,8 +367,28 @@ Javobing quyidagi JSON strukturada bo'lishi shart:
 {
   "reply": "xabar",
   "show_earth_route": false,
-  "location": null
+  "origin": null,
+  "destination": null,
+  "location": null,
+  "bus_route_name": null
 }
+
+AVIATSIYA REJIMI UCHUN MUHIM QOIDALAR:
+- Agar mijoz biror shaharga (Moskva, Dubai, Istanbul va h.k.) parvoz haqida so'rasa:
+  * "show_earth_route": true
+  * "origin": "TAS" (har doim Toshkent)
+  * "destination": o'sha shahardagi aeroportning IATA kodi (masalan Moskva = "SVO", Dubai = "DXB", Istanbul = "IST", London = "LHR", Frankfurt = "FRA", Paris = "CDG", Beijing = "PEK", Seoul = "ICN", Almaty = "ALA", Urumqi = "URC" va h.k.)
+- Agar IATA kodi noma'lum bo'lsa, eng mashhur aeroportini tanlang.
+
+AVTOBUS REJIMI UCHUN MUHIM QOIDALAR:
+- Agar mijoz biror manzilga (Chorsu, Yunusobod, Chilonzor va h.k.) borishni so'rasa:
+  * "bus_route_name" maydonida o'sha manzilga boradigan marshrut raqamini ko'rsat (masalan "28", "115", "1M" va h.k.)
+  * Agar aniq marshrut noma'lum bo'lsa null qoldir
+- Avtobuslar haqidagi savolda "show_earth_route": false bo'lishi shart.
+
+TEMIR YO'L REJIMI UCHUN MUHIM QOIDALAR:
+- Agar mijoz Samarqand, Buxoro, Qarshi, Andijon va boshqa shaharlarga poyezd haqida so'rasa, O'zbekiston hududi orqali yo'nalishini ayt.
+- Temir yo'lda "show_earth_route": false bo'lishi shart.
 
 Faol qatnovlar ro'yxati (bu ma'lumotdan foydalan):
 ${JSON.stringify(shortFlights)}`;

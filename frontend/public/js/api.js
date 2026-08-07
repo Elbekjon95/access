@@ -472,6 +472,20 @@ export async function sendMessage(message) {
         }, 1000);
       }
 
+      // Bus marshruti: AI bus_route_name qaytarsa xaritada ko'rsat
+      if (data.bus_route_name && window.airportNav && typeof window.airportNav.updateLeafletRoute === 'function') {
+        const routeName = String(data.bus_route_name).trim();
+        if (routeName) {
+          showModal("map-modal");
+          if (typeof window.updateMapSidePanelsForMode === 'function') {
+            window.updateMapSidePanelsForMode('bus');
+          }
+          setTimeout(() => {
+            window.airportNav.updateLeafletRoute(`${routeName}-Avtobus`);
+          }, 600);
+        }
+      }
+
       if (data.qr) {
         showQR(data.qr);
       } else {
