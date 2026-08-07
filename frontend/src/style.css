@@ -8,6 +8,16 @@
     --accent-glow: 0 0 20px rgba(0, 198, 255, 0.5);
 }
 
+/* Smooth Real-time Bus Marker Gliding */
+.leaflet-marker-icon.custom-bus-pill-marker {
+    transition: transform 2s ease-out, left 2s ease-out, top 2s ease-out !important;
+}
+.custom-bus-pill-marker:hover .bus-pill-inner {
+    transform: scale(1.18);
+    border-color: #00e5ff !important;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.8) !important;
+}
+
 * {
     margin: 0;
     padding: 0;

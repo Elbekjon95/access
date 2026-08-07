@@ -274,6 +274,8 @@ window.initLegacyApp = () => {
 // Auto-initialization Vue tomonidan Kiosk.vue da boshqariladi
 
 export function updateMapSidePanelsForMode(mode = 'aviation') {
+    const leftPanel = document.querySelector('#map-modal .map-side-panel.left');
+    const rightPanel = document.querySelector('#map-modal .map-side-panel.right');
     const leftHeader = document.querySelector('#map-modal .map-side-panel.left .panel-header');
     const rightHeader = document.querySelector('#map-modal .map-side-panel.right .panel-header');
     const listServices = document.getElementById("list-services");
@@ -281,66 +283,236 @@ export function updateMapSidePanelsForMode(mode = 'aviation') {
 
     if (!listServices || !listGates) return;
 
-    if (mode === 'railway') {
-        if (leftHeader) leftHeader.innerText = "Vokzal Xizmatlari";
-        if (rightHeader) rightHeader.innerText = "Peronlar & Yo'llar";
+    if (mode === 'bus') {
+        if (leftPanel) leftPanel.style.display = "none";
+        if (rightPanel) rightPanel.style.display = "flex";
 
-        const railwayServices = [
-            { name: "Chiptaxonalar (Kassa 1-10)", icon: "fa-ticket-alt" },
-            { name: "VIP / CIP Kutish Zali", icon: "fa-couch" },
-            { name: "Ona va bola xonasi", icon: "fa-baby" },
-            { name: "Yuk saqlash xonasi", icon: "fa-suitcase" },
-            { name: "Kutish Zali & Kafe", icon: "fa-utensils" },
-            { name: "Hojatxona", icon: "fa-restroom" },
-            { name: "Tibbiyot Punkt (Medpunkt)", icon: "fa-first-aid" },
-            { name: "Namozxona", icon: "fa-mosque" }
-        ];
+        if (rightHeader) {
+            rightHeader.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+                    <div style="display:flex; background:rgba(0,0,0,0.4); border-radius:8px; padding:3px; border:1px solid rgba(0,229,255,0.3);">
+                        <button id="btn-bus-nearby-tab" class="bus-tab-btn active" style="flex:1; padding:6px 4px; border:none; background:#00e5ff; color:#000; font-weight:bold; font-size:11px; border-radius:6px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <i class="fas fa-map-marker-alt"></i> Yaqin Avtobuslar
+                        </button>
+                        <button id="btn-bus-all-tab" class="bus-tab-btn" style="flex:1; padding:6px 4px; border:none; background:transparent; color:#fff; font-weight:bold; font-size:11px; border-radius:6px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <i class="fas fa-list"></i> Barcha Marshrutlar
+                        </button>
+                    </div>
+                    <div id="bus-search-wrapper" style="position:relative; width:100%; display:none;">
+                        <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#00e5ff; font-size:12px;"></i>
+                        <input id="bus-search-input" type="text" placeholder="Qidirish (115, 28, 40)..." style="width:100%; padding:6px 10px 6px 30px; background:rgba(0,229,255,0.12); border:1px solid rgba(0,229,255,0.4); border-radius:6px; color:#fff; font-size:12px; outline:none; font-family:inherit;" />
+                    </div>
+                </div>
+            `;
+        }
 
-        const railwayPlatforms = [
-            { name: "Peron 1 (Afrosiyob Yo'li)", icon: "fa-train" },
-            { name: "Peron 2 (Sharq / Express Yo'li)", icon: "fa-train" },
-            { name: "Peron 3 (Vodiy Yo'nalishi)", icon: "fa-train" },
-            { name: "Peron 4 (Termiz / Qarshi Yo'li)", icon: "fa-train" },
-            { name: "Peron 5 (Nukus / Xiva Yo'li)", icon: "fa-train" }
-        ];
+        const nearbyTabBtn = document.getElementById('btn-bus-nearby-tab');
+        const allTabBtn = document.getElementById('btn-bus-all-tab');
+        const searchWrapper = document.getElementById('bus-search-wrapper');
 
-        renderPanelList(listServices, railwayServices);
-        renderPanelList(listGates, railwayPlatforms);
+        if (nearbyTabBtn && allTabBtn) {
+            nearbyTabBtn.onclick = () => {
+                nearbyTabBtn.style.background = '#00e5ff';
+                nearbyTabBtn.style.color = '#000';
+                allTabBtn.style.background = 'transparent';
+                allTabBtn.style.color = '#fff';
+                if (searchWrapper) searchWrapper.style.display = 'none';
+                loadNearbyBusesToPanel(listGates);
+            };
 
-    } else if (mode === 'bus') {
-        if (leftHeader) leftHeader.innerText = "Yo'nalishlar (GPS)";
-        if (rightHeader) rightHeader.innerText = "Toshkent Bekatlari";
+            allTabBtn.onclick = () => {
+                allTabBtn.style.background = '#00e5ff';
+                allTabBtn.style.color = '#000';
+                nearbyTabBtn.style.background = 'transparent';
+                nearbyTabBtn.style.color = '#fff';
+                if (searchWrapper) searchWrapper.style.display = 'block';
+                loadAllBusRoutesToPanel(listGates);
+            };
+        }
 
-        const busServices = [
-            { name: "28-Avtobus (Vokzal - Yunusobod)", icon: "fa-bus" },
-            { name: "51-Avtobus (Yunusobod - Chorsu)", icon: "fa-bus" },
-            { name: "14-Avtobus (Vokzal - TTZ)", icon: "fa-bus" },
-            { name: "38-Avtobus (Chilonzor - B.Ipak Yo'li)", icon: "fa-bus" },
-            { name: "91-Avtobus (Yunusobod - Qo'yliq)", icon: "fa-bus" },
-            { name: "115-Avtobus (Qoraqamysh - Sergeli)", icon: "fa-bus" }
-        ];
-
-        const busPlatforms = [
-            { name: "Amir Temur Xiyoboni", icon: "fa-map-marker-alt" },
-            { name: "Chorsu Bozori", icon: "fa-store" },
-            { name: "Toshkent Vokzali", icon: "fa-train" },
-            { name: "Oloy Bozori", icon: "fa-shopping-basket" },
-            { name: "Yunusobod 6-mavze", icon: "fa-building" },
-            { name: "Chilonzor Metro", icon: "fa-subway" },
-            { name: "Buyuk Ipak Yo'li", icon: "fa-tree" },
-            { name: "TTZ Avtovokzal", icon: "fa-bus-alt" }
-        ];
-
-        renderPanelList(listServices, busServices);
-        renderPanelList(listGates, busPlatforms);
+        // Default load Nearby Buses
+        loadNearbyBusesToPanel(listGates);
 
     } else {
-        if (leftHeader) leftHeader.innerText = "xizmatlar";
-        if (rightHeader) rightHeader.innerText = "Darvozalar";
-        if (window.airportNav && window.airportNav.nodes) {
-            fillSidePanels(window.airportNav.nodes);
+        if (leftPanel) leftPanel.style.display = "flex";
+        if (rightPanel) rightPanel.style.display = "flex";
+
+        if (mode === 'railway') {
+            if (leftHeader) leftHeader.innerText = "Vokzal Xizmatlari";
+            if (rightHeader) rightHeader.innerText = "Peronlar & Yo'llar";
+
+            const railwayServices = [
+                { name: "Chiptaxonalar (Kassa 1-10)", icon: "fa-ticket-alt" },
+                { name: "VIP / CIP Kutish Zali", icon: "fa-couch" },
+                { name: "Ona va bola xonasi", icon: "fa-baby" },
+                { name: "Yuk saqlash xonasi", icon: "fa-suitcase" },
+                { name: "Kutish Zali & Kafe", icon: "fa-utensils" },
+                { name: "Hojatxona", icon: "fa-restroom" },
+                { name: "Tibbiyot Punkt (Medpunkt)", icon: "fa-first-aid" },
+                { name: "Namozxona", icon: "fa-mosque" }
+            ];
+
+            const railwayPlatforms = [
+                { name: "Peron 1 (Afrosiyob Yo'li)", icon: "fa-train" },
+                { name: "Peron 2 (Sharq / Express Yo'li)", icon: "fa-train" },
+                { name: "Peron 3 (Vodiy Yo'nalishi)", icon: "fa-train" },
+                { name: "Peron 4 (Termiz / Qarshi Yo'li)", icon: "fa-train" },
+                { name: "Peron 5 (Nukus / Xiva Yo'li)", icon: "fa-train" }
+            ];
+
+            renderPanelList(listServices, railwayServices);
+            renderPanelList(listGates, railwayPlatforms);
+
+        } else {
+            if (leftHeader) leftHeader.innerText = "xizmatlar";
+            if (rightHeader) rightHeader.innerText = "Darvozalar";
+            if (window.airportNav && window.airportNav.nodes) {
+                fillSidePanels(window.airportNav.nodes);
+            }
         }
     }
+}
+
+async function loadNearbyBusesToPanel(container) {
+    container.innerHTML = '<div style="color:#00e5ff; padding:15px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Yaqin atrofingizdagi avtobuslar aniqlanmoqda...</div>';
+
+    try {
+        const kioskLat = 41.2917;
+        const kioskLng = 69.2844;
+        const res = await fetch(`api/bus/nearby?lat=${kioskLat}&lng=${kioskLng}&radius=2.5`).then(r => r.json());
+
+        if (res.success && res.data && res.data.length > 0) {
+            container.innerHTML = "";
+            res.data.forEach((v, idx) => {
+                const item = document.createElement("div");
+                item.className = "panel-item bus-nearby-item";
+                if (idx === 0) item.classList.add("active");
+                item.style.display = "flex";
+                item.style.flexDirection = "column";
+                item.style.alignItems = "flex-start";
+                item.style.gap = "4px";
+                item.style.padding = "10px 12px";
+
+                item.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; width:100%; font-weight:bold;">
+                        <span style="color:#ffcc00;"><i class="fas fa-bus"></i> ${v.routeName}-Avtobus</span>
+                        <span style="color:#00e5ff; font-size:11px;">📍 ${v.distanceMeters}m masofa</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; width:100%; font-size:11px; color:rgba(255,255,255,0.7);">
+                        <span>⏱️ ~${v.etaMin} daqiqada keladi</span>
+                        <span>kn ${v.govNumber || ''}</span>
+                    </div>
+                `;
+
+                item.onclick = (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.bus-nearby-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+
+                    if (window.airportNav && typeof window.airportNav.updateLeafletRoute === 'function') {
+                        window.airportNav.updateLeafletRoute(`${v.routeName}-Avtobus`);
+                    }
+                };
+                container.appendChild(item);
+            });
+
+            if (window.airportNav && typeof window.airportNav.updateLeafletNearbyBuses === 'function') {
+                window.airportNav.updateLeafletNearbyBuses(kioskLat, kioskLng, 2.5);
+            }
+        } else {
+            container.innerHTML = '<div style="color:rgba(255,255,255,0.6); padding:15px; text-align:center;">Yaqin atrofda avtobus topilmadi</div>';
+        }
+    } catch(err) {
+        console.error('Nearby buses load error:', err);
+        container.innerHTML = '<div style="color:#ff5252; padding:10px;">Yaqin avtobuslarni yuklashda xatolik</div>';
+    }
+}
+
+let allBusRoutesList = [];
+
+async function loadAllBusRoutesToPanel(container) {
+    container.innerHTML = '<div style="color:#00e5ff; padding:15px; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Marshrutlar yuklanmoqda...</div>';
+
+    try {
+        if (allBusRoutesList.length === 0) {
+            const res = await fetch('api/bus/routes').then(r => r.json());
+            if (res.success && res.data) {
+                const map = new Map();
+                res.data.forEach(r => {
+                    if (r.routeName && !map.has(String(r.routeName))) {
+                        map.set(String(r.routeName), r);
+                    }
+                });
+
+                allBusRoutesList = Array.from(map.values()).sort((a, b) => {
+                    const numA = parseInt(a.routeName) || 999;
+                    const numB = parseInt(b.routeName) || 999;
+                    if (numA !== numB) return numA - numB;
+                    return String(a.routeName).localeCompare(String(b.routeName));
+                });
+            }
+        }
+
+        renderBusRoutesList(container, allBusRoutesList);
+
+        const searchInput = document.getElementById('bus-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = (e) => {
+                const query = e.target.value.trim().toLowerCase();
+                if (!query) {
+                    renderBusRoutesList(container, allBusRoutesList);
+                    return;
+                }
+
+                const numMatch = query.match(/\d+/)?.[0];
+                const filtered = allBusRoutesList.filter(r => {
+                    const rName = String(r.routeName || '').toLowerCase();
+                    const rId = String(r.routeId || '').toLowerCase();
+                    if (numMatch && rName === numMatch) return true;
+                    if (numMatch && rName.includes(numMatch)) return true;
+                    if (rName.includes(query) || rId.includes(query)) return true;
+                    return false;
+                }).sort((a, b) => {
+                    if (numMatch) {
+                        if (String(a.routeName) === numMatch) return -1;
+                        if (String(b.routeName) === numMatch) return 1;
+                    }
+                    return (parseInt(a.routeName) || 999) - (parseInt(b.routeName) || 999);
+                });
+
+                renderBusRoutesList(container, filtered);
+            };
+        }
+    } catch(err) {
+        console.error('Bus routes panel load error:', err);
+        container.innerHTML = '<div style="color:#ff5252; padding:10px;">Marshrutlarni yuklashda xatolik</div>';
+    }
+}
+
+function renderBusRoutesList(container, routes) {
+    container.innerHTML = "";
+    if (routes.length === 0) {
+        container.innerHTML = '<div style="color:rgba(255,255,255,0.5); padding:15px; text-align:center;">Marshrut topilmadi</div>';
+        return;
+    }
+
+    routes.forEach((r, idx) => {
+        const item = document.createElement("div");
+        item.className = "panel-item bus-route-item";
+        if (idx === 0) item.classList.add("active");
+        item.innerHTML = `<i class="fas fa-bus" style="color:#ffcc00;"></i><span>${r.routeName}-Avtobus Yo'nalishi</span>`;
+        item.onclick = (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.bus-route-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+
+            if (window.airportNav && typeof window.airportNav.updateLeafletRoute === 'function') {
+                window.airportNav.updateLeafletRoute(`${r.routeName}-Avtobus`);
+            }
+        };
+        container.appendChild(item);
+    });
 }
 
 function renderPanelList(container, items) {

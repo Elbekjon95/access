@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch-path=server.js --watch-path=routes --watch-path=config --watch-path=models --watch-path=scripts server.js"
   },
   "dependencies": {
     "@google/genai": "*",

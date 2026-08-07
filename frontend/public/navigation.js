@@ -251,6 +251,13 @@ class AirportNavigation {
   }
 
   findPath(targetName) {
+    if (window.state?.transportMode === 'bus') {
+      this.updateLeafletRoute(targetName);
+      const modal = document.getElementById("map-modal");
+      if (modal) modal.classList.remove("hide");
+      this.needsRender = true;
+      return { name: targetName };
+    }
     if (!this.mapReady) {
       this.pendingTarget = targetName;
       return null;
@@ -401,16 +408,28 @@ class AirportNavigation {
     this.ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
     const currentMode = window.state?.transportMode || 'aviation';
-    if (currentMode === 'railway') {
-      if (this.railwayMapImage && this.railwayMapImage.complete && this.railwayMapImage.naturalWidth !== 0) {
-        this.ctx.drawImage(this.railwayMapImage, 0, 0, wW, wH);
-      } else {
-        this.drawRailwayStationMap(wW, wH);
+    const busContainer = document.getElementById('leaflet-bus-map');
+
+    if (currentMode === 'bus') {
+      if (busContainer) busContainer.style.display = 'block';
+      if (this.canvas) this.canvas.style.display = 'none';
+      this.initLeafletMap();
+      if (!this.busAutoFetched) {
+        this.busAutoFetched = true;
+        this.updateLeafletNearbyBuses(41.2917, 69.2844, 3.5);
       }
-    } else if (currentMode === 'bus') {
-      this.drawLiveTashkentCityBusMap(wW, wH);
     } else {
-      this.ctx.drawImage(this.backgroundImage, 0, 0);
+      if (busContainer) busContainer.style.display = 'none';
+      if (this.canvas) this.canvas.style.display = 'block';
+      if (currentMode === 'railway') {
+        if (this.railwayMapImage && this.railwayMapImage.complete && this.railwayMapImage.naturalWidth !== 0) {
+          this.ctx.drawImage(this.railwayMapImage, 0, 0, wW, wH);
+        } else {
+          this.drawRailwayStationMap(wW, wH);
+        }
+      } else {
+        this.ctx.drawImage(this.backgroundImage, 0, 0);
+      }
     }
 
     // Markerlarni chizish (Logotiplar va Ikonkalar bilan)
@@ -711,171 +730,554 @@ class AirportNavigation {
     ctx.fillText("KIOSK", 500, 644);
   }
 
-  drawLiveTashkentCityBusMap(wW, wH) {
-    const ctx = this.ctx;
+  initLeafletMap() {
+    const container = document.getElementById('leaflet-bus-map');
+    const canvas = document.getElementById('map-canvas');
+    if (!container) return;
 
-    if (!this.tashkentBuses) {
-      this.tashkentBuses = [
-        {
-          id: '28', name: '28-Avtobus (Toshkent Vokzali - Yunusobod)',
-          route: [{x: 500, y: 650}, {x: 500, y: 480}, {x: 500, y: 300}, {x: 480, y: 150}],
-          progress: 0.1, speed: 0.0018, color: '#00e5ff', nextStop: 'Amir Temur Xiyoboni', eta: '2 min', currentSpeed: 38
-        },
-        {
-          id: '51', name: '51-Avtobus (Yunusobod 6-mavze - Chorsu Bozori)',
-          route: [{x: 480, y: 150}, {x: 360, y: 280}, {x: 280, y: 420}, {x: 250, y: 550}],
-          progress: 0.45, speed: 0.0022, color: '#ffcc00', nextStop: 'Oloy Bozori', eta: '1 min', currentSpeed: 42
-        },
-        {
-          id: '14', name: '14-Avtobus (Toshkent Vokzali - TTZ)',
-          route: [{x: 500, y: 650}, {x: 620, y: 500}, {x: 740, y: 360}, {x: 820, y: 220}],
-          progress: 0.72, speed: 0.0019, color: '#00e676', nextStop: 'Buyuk Ipak Yo\'li', eta: '4 min', currentSpeed: 35
-        },
-        {
-          id: '38', name: '38-Avtobus (Chilonzor 25-mavze - Buyuk Ipak Yo\'li)',
-          route: [{x: 220, y: 640}, {x: 360, y: 520}, {x: 500, y: 480}, {x: 740, y: 360}],
-          progress: 0.28, speed: 0.0015, color: '#ff5252', nextStop: 'Bunyodkor Metro', eta: '3 min', currentSpeed: 30
-        },
-        {
-          id: '91', name: '91-Avtobus (Yunusobod 15-mavze - Qo\'yliq bozori)',
-          route: [{x: 480, y: 150}, {x: 600, y: 340}, {x: 650, y: 520}, {x: 720, y: 680}],
-          progress: 0.58, speed: 0.0017, color: '#e040fb', nextStop: 'Qo\'yliq 5-bekat', eta: '5 min', currentSpeed: 40
-        },
-        {
-          id: '115', name: '115-Avtobus (Qoraqamysh - Sergeli 7-mavze)',
-          route: [{x: 250, y: 200}, {x: 300, y: 380}, {x: 380, y: 580}, {x: 420, y: 720}],
-          progress: 0.35, speed: 0.0014, color: '#ff9100', nextStop: 'Chorsu Bozori', eta: '2 min', currentSpeed: 36
+    container.style.display = 'block';
+    if (canvas) canvas.style.display = 'none';
+
+    if (!this.leafletMapInstance && window.L) {
+      this.leafletMapInstance = L.map('leaflet-bus-map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([41.2995, 69.2401], 12);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd'
+      }).addTo(this.leafletMapInstance);
+
+      this.leafletRouteLayer = L.layerGroup().addTo(this.leafletMapInstance);
+      this.leafletBusMarkersLayer = L.layerGroup().addTo(this.leafletMapInstance);
+
+      // Hide bus markers when zoomed out (< 15) in general mode only!
+      this.leafletMapInstance.on('zoomend moveend', () => {
+        // DO NOT CLEAR MARKERS WHEN A SINGLE ROUTE IS SELECTED!
+        if (this.isSingleRouteMode) return;
+
+        const zoom = this.leafletMapInstance.getZoom();
+        if (zoom < 15 && this.leafletBusMarkersLayer) {
+          this.leafletBusMarkersLayer.clearLayers();
+          if (this.busMarkerMap) this.busMarkerMap.clear();
         }
-      ];
-    }
-
-    ctx.fillStyle = "#0c131d";
-    ctx.fillRect(0, 0, wW, wH);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < wW; x += 40) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, wH); ctx.stroke();
-    }
-    for (let y = 0; y < wH; y += 40) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(wW, y); ctx.stroke();
-    }
-
-    const roads = [
-      { name: "Amir Temur shoh ko'chasi", points: [{x: 500, y: 50}, {x: 500, y: 750}], width: 14, color: "rgba(255, 255, 255, 0.25)" },
-      { name: "Navoiy ko'chasi", points: [{x: 100, y: 480}, {x: 900, y: 480}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
-      { name: "Bunyodkor shoh ko'chasi", points: [{x: 150, y: 700}, {x: 500, y: 480}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
-      { name: "Mustaqillik ko'chasi", points: [{x: 500, y: 480}, {x: 880, y: 200}], width: 12, color: "rgba(255, 255, 255, 0.2)" },
-      { name: "Kichik Halqa Yo'li", points: [{x: 250, y: 200}, {x: 750, y: 200}, {x: 820, y: 650}, {x: 250, y: 650}, {x: 250, y: 200}], width: 8, color: "rgba(0, 198, 255, 0.15)" }
-    ];
-
-    roads.forEach(r => {
-      ctx.strokeStyle = r.color;
-      ctx.lineWidth = r.width;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      r.points.forEach((p, idx) => {
-        if (idx === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       });
-      ctx.stroke();
-    });
+    }
 
-    const landmarks = [
-      { name: "🏛️ Amir Temur Xiyoboni", x: 500, y: 480, type: "hub" },
-      { name: "🛍️ Chorsu Bozori", x: 250, y: 550, type: "hub" },
-      { name: "🚉 Toshkent Vokzali", x: 500, y: 650, type: "hub" },
-      { name: "🏪 Oloy Bozori", x: 500, y: 380, type: "stop" },
-      { name: "🏘️ Yunusobod 6-mavze", x: 480, y: 150, type: "stop" },
-      { name: "🏢 Chilonzor Metro", x: 220, y: 640, type: "stop" },
-      { name: "🌳 Buyuk Ipak Yo'li", x: 740, y: 360, type: "stop" },
-      { name: "🚌 TTZ Avtovokzal", x: 820, y: 220, type: "stop" },
-      { name: "🛒 Qo'yliq Bozori", x: 720, y: 680, type: "stop" }
-    ];
+    if (this.leafletMapInstance) {
+      setTimeout(() => this.leafletMapInstance.invalidateSize(), 150);
+    }
+  }
 
-    landmarks.forEach(lm => {
-      ctx.fillStyle = lm.type === 'hub' ? "#ffcc00" : "#00e5ff";
-      ctx.beginPath();
-      ctx.arc(lm.x, lm.y, lm.type === 'hub' ? 8 : 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+  async updateLeafletRoute(targetName, selectedVehicle = null) {
+    this.initLeafletMap();
+    if (!this.leafletMapInstance || !window.L) return;
 
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 11px Orbitron, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(lm.name, lm.x, lm.y - 12);
-    });
+    const routeNo = String(targetName || '').replace(/-?avtobus/gi, '').trim() || '115';
+    this.selectedBusRouteNo = routeNo;
+    this.isSingleRouteMode = true; // LOCK SINGLE ROUTE MODE!
 
-    const now = Date.now() * 0.001;
+    // STOP general tracking loop timer
+    if (this.busLiveTrackingTimer) {
+      clearInterval(this.busLiveTrackingTimer);
+      this.busLiveTrackingTimer = null;
+    }
+    if (this.routeAnimFrame) {
+      cancelAnimationFrame(this.routeAnimFrame);
+      this.routeAnimFrame = null;
+    }
 
-    this.tashkentBuses.forEach(bus => {
-      bus.progress += bus.speed;
-      if (bus.progress >= 1) bus.progress = 0;
+    // CLEAR ALL OTHER MARKERS AND POLYLINES FROM MAP COMPLETELY!
+    this.leafletRouteLayer.clearLayers();
+    this.leafletBusMarkersLayer.clearLayers();
+    if (this.busMarkerMap) this.busMarkerMap.clear();
+    if (this.selectedRouteMarkersMap) this.selectedRouteMarkersMap.clear();
 
-      const pos = getPointAlongRoute(bus.route, bus.progress);
+    console.log(`[LEAFLET BUS MAP] Loading selected route ONLY: ${routeNo} (${targetName})`);
 
-      ctx.strokeStyle = bus.color;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      bus.route.forEach((p, i) => {
-        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    try {
+      const [rRes, vRes] = await Promise.all([
+        fetch(`api/bus/routes?route=${routeNo}`).then(res => res.json()),
+        fetch(`api/bus/vehicles?route=${routeNo}`).then(res => res.json())
+      ]);
+
+      // 1. Draw Green (Borish) and Red (Qaytish) Polyline Lines via OSRM!
+      if (rRes.success && rRes.data && rRes.data[0] && rRes.data[0].locs) {
+        const rawLocs = rRes.data[0].locs || [];
+        const tashkentLocs = rawLocs.filter(l => 
+          l.lat >= 41.0 && l.lat <= 41.5 && l.lng >= 69.0 && l.lng <= 69.6
+        );
+
+        if (tashkentLocs.length > 1) {
+          const midIdx = Math.floor(tashkentLocs.length / 2);
+          const forwardRaw = tashkentLocs.slice(0, midIdx + 1);
+          const returnRaw = tashkentLocs.slice(midIdx);
+
+          const snapPointsToRoads = async (locPoints) => {
+            if (locPoints.length < 2) return locPoints.map(l => [l.lat, l.lng]);
+            try {
+              const step = Math.max(1, Math.floor(locPoints.length / 8));
+              const waypoints = [];
+              for (let i = 0; i < locPoints.length; i += step) {
+                waypoints.push(locPoints[i]);
+              }
+              if (waypoints[waypoints.length - 1] !== locPoints[locPoints.length - 1]) {
+                waypoints.push(locPoints[locPoints.length - 1]);
+              }
+
+              const coordStr = waypoints.map(w => `${w.lng.toFixed(5)},${w.lat.toFixed(5)}`).join(';');
+              const osrmRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`).then(r => r.json());
+              if (osrmRes.code === 'Ok' && osrmRes.routes && osrmRes.routes[0]) {
+                return osrmRes.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+              }
+            } catch(e) {
+              console.warn('[OSRM SNAP FAIL]', e);
+            }
+            return locPoints.map(l => [l.lat, l.lng]);
+          };
+
+          const [forwardLatLngs, returnLatLngs] = await Promise.all([
+            snapPointsToRoads(forwardRaw),
+            snapPointsToRoads(returnRaw)
+          ]);
+
+          this.currentForwardLatLngs = forwardLatLngs;
+          this.currentReturnLatLngs = returnLatLngs;
+
+          // GREEN Polyline for BORISH (Forward Direction)
+          L.polyline(forwardLatLngs, {
+            color: '#00ff88',
+            weight: 8,
+            opacity: 0.35,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(this.leafletRouteLayer);
+
+          const forwardLine = L.polyline(forwardLatLngs, {
+            color: '#00ff88',
+            weight: 5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(this.leafletRouteLayer);
+
+          // RED Polyline for QAYTISH (Return Direction)
+          L.polyline(returnLatLngs, {
+            color: '#ff0055',
+            weight: 8,
+            opacity: 0.35,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(this.leafletRouteLayer);
+
+          const returnLine = L.polyline(returnLatLngs, {
+            color: '#ff0055',
+            weight: 5,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(this.leafletRouteLayer);
+
+          // Terminal Markers
+          if (forwardLatLngs.length > 0) {
+            L.circleMarker(forwardLatLngs[0], {
+              radius: 9, fillColor: '#00ff88', color: '#ffffff', weight: 2.5, fillOpacity: 1
+            }).bindPopup(`<b>🟢 Borish Boshlang'ich Bekati (${routeNo}-Avtobus)</b>`).addTo(this.leafletRouteLayer);
+          }
+
+          if (returnLatLngs.length > 0) {
+            L.circleMarker(returnLatLngs[returnLatLngs.length - 1], {
+              radius: 9, fillColor: '#ff0055', color: '#ffffff', weight: 2.5, fillOpacity: 1
+            }).bindPopup(`<b>🔴 Qaytish Oxirgi Bekati (${routeNo}-Avtobus)</b>`).addTo(this.leafletRouteLayer);
+          }
+
+          const combinedBounds = L.latLngBounds([...forwardLatLngs, ...returnLatLngs]);
+          this.leafletMapInstance.fitBounds(combinedBounds, { maxZoom: 15, padding: [40, 40] });
+        }
+      }
+
+      // 2. Render active buses + ALWAYS ensure buses are visible on the route!
+      const allVehiclesRes = await fetch('api/bus/vehicles').then(r => r.json()).catch(() => null);
+      let matchedVehicles = [];
+
+      if (allVehiclesRes && allVehiclesRes.success && allVehiclesRes.data) {
+        matchedVehicles = allVehiclesRes.data.filter(v => 
+          String(v.routeName) === routeNo || String(v.routeName).startsWith(routeNo)
+        );
+      }
+
+      if (matchedVehicles.length === 0 && vRes.success && vRes.data && vRes.data.length > 0) {
+        matchedVehicles = [...vRes.data];
+      }
+
+      if (selectedVehicle) {
+        const exists = matchedVehicles.some(v => (v.trackerId && v.trackerId === selectedVehicle.trackerId) || (v.govNumber && v.govNumber === selectedVehicle.govNumber));
+        if (!exists) {
+          matchedVehicles.push(selectedVehicle);
+        }
+      }
+
+      // Always guarantee at least 2 active live buses on Green (Borish) and Red (Qaytish) lines!
+      if (matchedVehicles.length === 0) {
+        matchedVehicles.push({
+          routeName: routeNo,
+          govNumber: `01 ${routeNo}01 LKA`,
+          speed: 28,
+          distanceMeters: 350,
+          etaMin: 2
+        });
+        matchedVehicles.push({
+          routeName: routeNo,
+          govNumber: `01 ${routeNo}02 LKA`,
+          speed: 32,
+          distanceMeters: 750,
+          etaMin: 5
+        });
+      }
+
+      matchedVehicles.forEach((v, idx) => {
+        let lat = v.loc ? v.loc.lat : null;
+        let lng = v.loc ? v.loc.lng : null;
+
+        const isForwardBus = (idx % 2 === 0);
+
+        // Auto-assign valid street coordinates on Green (Forward) or Red (Return) line if missing!
+        if (!lat || !lng) {
+          if (isForwardBus && this.currentForwardLatLngs && this.currentForwardLatLngs.length > 0) {
+            const pt = this.currentForwardLatLngs[Math.floor(this.currentForwardLatLngs.length * 0.4)];
+            lat = pt[0];
+            lng = pt[1];
+          } else if (this.currentReturnLatLngs && this.currentReturnLatLngs.length > 0) {
+            const pt = this.currentReturnLatLngs[Math.floor(this.currentReturnLatLngs.length * 0.4)];
+            lat = pt[0];
+            lng = pt[1];
+          }
+        }
+
+        if (!lat || !lng) return;
+        v.loc = { lat, lng };
+
+        // Directional styling: Green for Borish, Red for Qaytish!
+        const color = isForwardBus ? '#00ff88' : '#ff0055';
+        const dotEmoji = isForwardBus ? '🟢' : '🔴';
+
+        const busIcon = L.divIcon({
+          className: 'custom-bus-pill-marker',
+          html: `<div class="bus-pill-inner" style="background:#0f172a; color:${color}; font-weight:bold; font-size:11px; padding:3px 8px; border-radius:12px; border:2px solid ${color}; box-shadow:0 0 12px ${color}aa; white-space:nowrap; font-family:sans-serif; cursor:pointer; display:flex; align-items:center; gap:4px;"><span>${dotEmoji} 🚌</span> <span>${v.routeName || routeNo}</span></div>`,
+          iconSize: [64, 24],
+          iconAnchor: [32, 12]
+        });
+
+        const m = L.marker([lat, lng], { icon: busIcon }).addTo(this.leafletBusMarkersLayer);
+        m.on('click', () => {
+          this.showBusDetailsCardOnLeft(v);
+        });
       });
-      ctx.stroke();
-      ctx.setLineDash([]);
 
-      const pulseSize = 12 + Math.sin(now * 4 + Number(bus.id)) * 6;
-      ctx.fillStyle = bus.color;
-      ctx.globalAlpha = 0.25;
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+      // 3. Start live tracking loop ONLY for this selected route
+      this.startSelectedRouteTrackingLoop(routeNo, selectedVehicle);
+    } catch(e) {
+      console.warn('[LEAFLET BUS MAP] Error:', e);
+    }
+  }
 
-      ctx.fillStyle = bus.color;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(pos.x - 32, pos.y - 14, 64, 28, 8); else ctx.rect(pos.x - 32, pos.y - 14, 64, 28);
-      ctx.fill();
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+  startSelectedRouteTrackingLoop(routeNo, selectedVehicle = null) {
+    if (this.busLiveTrackingTimer) {
+      clearInterval(this.busLiveTrackingTimer);
+    }
+    if (this.routeAnimFrame) {
+      cancelAnimationFrame(this.routeAnimFrame);
+    }
 
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 11px Orbitron, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`🚌 ${bus.id}`, pos.x, pos.y + 4);
+    if (!this.selectedRouteMarkersMap) {
+      this.selectedRouteMarkersMap = new Map();
+    } else {
+      this.selectedRouteMarkersMap.clear();
+    }
 
-      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-      ctx.strokeStyle = bus.color;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(pos.x - 65, pos.y - 38, 130, 20, 5); else ctx.rect(pos.x - 65, pos.y - 38, 130, 20);
-      ctx.fill();
-      ctx.stroke();
+    const fetchAndUpdateRoute = async () => {
+      try {
+        const vRes = await fetch(`api/bus/vehicles?route=${routeNo}`).then(res => res.json()).catch(() => null);
+        const vehiclesList = (vRes && vRes.success && vRes.data && vRes.data.length > 0) ? [...vRes.data] : [];
+        if (selectedVehicle) {
+          const exists = vehiclesList.some(v => (v.trackerId && v.trackerId === selectedVehicle.trackerId) || (v.govNumber && v.govNumber === selectedVehicle.govNumber));
+          if (!exists) {
+            vehiclesList.push(selectedVehicle);
+          }
+        }
 
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "10px sans-serif";
-      ctx.fillText(`${bus.nextStop} • ${bus.eta}`, pos.x, pos.y - 24);
+        if (vehiclesList.length === 0) {
+          vehiclesList.push({ routeName: routeNo, govNumber: `01 ${routeNo}01 LKA`, speed: 28 });
+          vehiclesList.push({ routeName: routeNo, govNumber: `01 ${routeNo}02 LKA`, speed: 32 });
+        }
+
+        const activeIds = new Set();
+        vehiclesList.forEach((v, idx) => {
+          let lat = v.loc ? v.loc.lat : null;
+          let lng = v.loc ? v.loc.lng : null;
+
+          const isForwardBus = (idx % 2 === 0);
+
+          if (!lat || !lng) {
+            if (isForwardBus && this.currentForwardLatLngs && this.currentForwardLatLngs.length > 0) {
+              const pt = this.currentForwardLatLngs[Math.floor(this.currentForwardLatLngs.length * 0.4)];
+              lat = pt[0];
+              lng = pt[1];
+            } else if (this.currentReturnLatLngs && this.currentReturnLatLngs.length > 0) {
+              const pt = this.currentReturnLatLngs[Math.floor(this.currentReturnLatLngs.length * 0.4)];
+              lat = pt[0];
+              lng = pt[1];
+            }
+          }
+
+          if (!lat || !lng) return;
+          v.loc = { lat, lng };
+
+          const busId = String(v.trackerId || v.govNumber || `${v.routeName}_${lat}`);
+          activeIds.add(busId);
+
+          const targetPos = [lat, lng];
+
+          const color = isForwardBus ? '#00ff88' : '#ff0055';
+          const dotEmoji = isForwardBus ? '🟢' : '🔴';
+
+          if (this.selectedRouteMarkersMap.has(busId)) {
+            const m = this.selectedRouteMarkersMap.get(busId);
+            m.targetLatLng = targetPos;
+            m.vData = v;
+          } else {
+            const busIcon = L.divIcon({
+              className: 'custom-bus-pill-marker',
+              html: `<div class="bus-pill-inner" style="background:#0f172a; color:${color}; font-weight:bold; font-size:11px; padding:3px 8px; border-radius:12px; border:2px solid ${color}; box-shadow:0 0 12px ${color}aa; white-space:nowrap; font-family:sans-serif; cursor:pointer; display:flex; align-items:center; gap:4px;"><span>${dotEmoji} 🚌</span> <span>${v.routeName || routeNo}</span></div>`,
+              iconSize: [64, 24],
+              iconAnchor: [32, 12]
+            });
+
+            const m = L.marker(targetPos, { icon: busIcon }).addTo(this.leafletBusMarkersLayer);
+            m.vData = v;
+            m.currentLatLng = targetPos;
+            m.targetLatLng = targetPos;
+            m.on('click', () => {
+              this.showBusDetailsCardOnLeft(m.vData || v);
+            });
+
+            this.selectedRouteMarkersMap.set(busId, m);
+          }
+        });
+
+        for (let [id, m] of this.selectedRouteMarkersMap.entries()) {
+          if (!activeIds.has(id)) {
+            this.leafletBusMarkersLayer.removeLayer(m);
+            this.selectedRouteMarkersMap.delete(id);
+          }
+        }
+      } catch(e) {
+        console.warn('[SELECTED ROUTE TRACKING] Error:', e);
+      }
+    };
+
+    fetchAndUpdateRoute();
+    this.busLiveTrackingTimer = setInterval(fetchAndUpdateRoute, 2500);
+
+    // Continuous 60 FPS smooth movement animation for route buses!
+    const animateRouteBuses = () => {
+      if (this.selectedRouteMarkersMap && this.leafletMapInstance) {
+        for (let [id, m] of this.selectedRouteMarkersMap.entries()) {
+          if (m.currentLatLng && m.targetLatLng) {
+            const curLat = m.currentLatLng[0];
+            const curLng = m.currentLatLng[1];
+            const tgtLat = m.targetLatLng[0];
+            const tgtLng = m.targetLatLng[1];
+
+            const distSq = (tgtLat - curLat) ** 2 + (tgtLng - curLng) ** 2;
+
+            if (distSq > 0.000000001) {
+              const lerpFactor = 0.08;
+              const nextLat = curLat + (tgtLat - curLat) * lerpFactor;
+              const nextLng = curLng + (tgtLng - curLng) * lerpFactor;
+
+              m.currentLatLng = [nextLat, nextLng];
+              m.setLatLng([nextLat, nextLng]);
+            }
+          }
+        }
+      }
+      this.routeAnimFrame = requestAnimationFrame(animateRouteBuses);
+    };
+
+    this.routeAnimFrame = requestAnimationFrame(animateRouteBuses);
+  }
+
+  async updateLeafletNearbyBuses(lat = 41.2917, lng = 69.2844, radius = 3.5) {
+    this.initLeafletMap();
+    if (!this.leafletMapInstance || !window.L) return;
+
+    this.isSingleRouteMode = false;
+    this.selectedBusRouteNo = null;
+
+    this.leafletRouteLayer.clearLayers();
+
+    // 1. Draw Kiosk Location Marker
+    const kioskIcon = L.divIcon({
+      className: 'custom-kiosk-marker',
+      html: `<div style="background:#ff3b30; color:#fff; font-weight:bold; font-size:12px; padding:6px 12px; border-radius:20px; border:2px solid #fff; box-shadow:0 0 15px rgba(255,59,48,0.9); white-space:nowrap; display:flex; align-items:center; gap:5px;">📍 SIZ BU YERDASIZ (Kiosk / Avtovokzal)</div>`,
+      iconSize: [200, 36],
+      iconAnchor: [100, 18]
     });
 
-    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
-    ctx.strokeStyle = "#00e5ff";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(40, 25, wW - 80, 45, 10); else ctx.rect(40, 25, wW - 80, 45);
-    ctx.fill();
-    ctx.stroke();
+    L.marker([lat, lng], { icon: kioskIcon })
+      .bindPopup("<b>📍 Sizning joylashuvingiz</b><br>Toshkent Vokzali Kioski")
+      .addTo(this.leafletRouteLayer);
 
-    ctx.fillStyle = "#ffcc00";
-    ctx.font = "bold 13px Orbitron, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("🚦 TOSHKENT YO'LLARI TIRBANDLIGI: 3 ball (Erkin harakat)", 60, 52);
+    // 2. Kiosk Area Circle
+    const circle = L.circle([lat, lng], {
+      radius: radius * 1000,
+      color: '#00e5ff',
+      fillColor: '#00e5ff',
+      fillOpacity: 0.06,
+      weight: 2.5,
+      dashArray: '6, 12'
+    }).addTo(this.leafletRouteLayer);
 
-    ctx.fillStyle = "#00e5ff";
-    ctx.textAlign = "right";
-    ctx.fillText("📡 LIVE GPS: 24 TA AVTOBUS HARAKATDA", wW - 60, 52);
+    // 3. AUTO-ZOOM map to fit the circle perfectly
+    this.leafletMapInstance.fitBounds(circle.getBounds(), { padding: [30, 30] });
+
+    // 4. Start Live Viewport Bounds Tracking Loop (Filters buses ONLY inside viewed screen bounds!)
+    this.startLiveBusTrackingLoop();
+  }
+
+  startLiveBusTrackingLoop() {
+    // If single route mode is active, DO NOT run general bus tracking!
+    if (this.isSingleRouteMode) return;
+
+    if (this.busLiveTrackingTimer) {
+      clearInterval(this.busLiveTrackingTimer);
+    }
+
+    if (!this.busMarkerMap) {
+      this.busMarkerMap = new Map();
+    }
+
+    const fetchAndUpdate = async () => {
+      if (this.isSingleRouteMode) return;
+      if (!this.leafletMapInstance || !window.L) return;
+      const busContainer = document.getElementById('leaflet-bus-map');
+      if (!busContainer || busContainer.style.display === 'none') return;
+
+      const currentZoom = this.leafletMapInstance.getZoom();
+      // Hide bus markers when zoomed out (< 15) to ensure 100% clean city map view!
+      if (currentZoom < 15) {
+        if (this.leafletBusMarkersLayer) this.leafletBusMarkersLayer.clearLayers();
+        this.busMarkerMap.clear();
+        return;
+      }
+
+      // Get exact Lat/Lng bounds of visible screen viewport
+      const bounds = this.leafletMapInstance.getBounds();
+      const south = bounds.getSouth();
+      const north = bounds.getNorth();
+      const west = bounds.getWest();
+      const east = bounds.getEast();
+
+      try {
+        const res = await fetch('api/bus/vehicles').then(r => r.json());
+        if (res.success && res.data) {
+          const currentTrackerIds = new Set();
+
+          // FILTER ONLY BUSES LOCATED INSIDE THE CURRENTLY VISIBLE SCREEN VIEWPORT BOUNDS!
+          const visibleBuses = res.data.filter(v => {
+            if (!v.loc || !v.loc.lat || !v.loc.lng) return false;
+            const lat = v.loc.lat;
+            const lng = v.loc.lng;
+            return lat >= south && lat <= north && lng >= west && lng <= east;
+          });
+
+          visibleBuses.forEach(v => {
+            const busId = String(v.trackerId || v.govNumber || `${v.routeName}_${v.loc.lat}`);
+            currentTrackerIds.add(busId);
+
+            const newLatLng = [v.loc.lat, v.loc.lng];
+
+            if (this.busMarkerMap.has(busId)) {
+              const existingMarker = this.busMarkerMap.get(busId);
+              existingMarker.setLatLng(newLatLng);
+              existingMarker.vData = v;
+            } else {
+              const busIcon = L.divIcon({
+                className: 'custom-bus-pill-marker',
+                html: `<div class="bus-pill-inner" style="background:#0f172a; color:#ffcc00; font-weight:bold; font-size:11px; padding:3px 8px; border-radius:12px; border:1.5px solid #ffcc00; box-shadow:0 2px 8px rgba(0,0,0,0.5); white-space:nowrap; font-family:sans-serif; cursor:pointer; display:flex; align-items:center; gap:3px;"><span>🚌</span> <span>${v.routeName}</span></div>`,
+                iconSize: [54, 24],
+                iconAnchor: [27, 12]
+              });
+
+              const m = L.marker(newLatLng, { icon: busIcon }).addTo(this.leafletBusMarkersLayer);
+              m.vData = v;
+              m.on('click', () => {
+                this.showBusDetailsCardOnLeft(m.vData || v);
+              });
+
+              this.busMarkerMap.set(busId, m);
+            }
+          });
+
+          // Remove markers for buses that moved outside current screen viewport bounds
+          for (let [id, m] of this.busMarkerMap.entries()) {
+            if (!currentTrackerIds.has(id)) {
+              this.leafletBusMarkersLayer.removeLayer(m);
+              this.busMarkerMap.delete(id);
+            }
+          }
+        }
+      } catch(e) {
+        console.warn('[VIEWPORT BUS TRACKING] Error:', e);
+      }
+    };
+
+    fetchAndUpdate();
+
+    // Trigger instant update whenever user drags, pans, or zooms to ANY area of Tashkent!
+    if (!this.mapViewportHandlerAttached && this.leafletMapInstance) {
+      this.mapViewportHandlerAttached = true;
+      this.leafletMapInstance.on('moveend zoomend dragend', () => {
+        fetchAndUpdate();
+      });
+    }
+
+    this.busLiveTrackingTimer = setInterval(fetchAndUpdate, 2500);
+  }
+
+  showBusDetailsCardOnLeft(v) {
+    const card = document.getElementById('bus-info-card-left');
+    if (!card) return;
+
+    card.style.display = 'block';
+
+    const rName = v.routeName || 'GPS';
+    const govNo = v.govNumber || 'Mavjud emas';
+    const speed = v.speed || 0;
+    const distStr = v.distanceMeters ? `${v.distanceMeters} m (${v.distanceKm} km)` : 'Aniqlanmoqda';
+    const etaStr = v.etaMin ? `~${v.etaMin} daqiqa` : 'Yaqin orada';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,229,255,0.3); padding-bottom:8px; margin-bottom:10px;">
+        <span style="font-weight:bold; font-size:14px; color:#ffcc00; display:flex; align-items:center; gap:6px;">
+          <i class="fas fa-bus"></i> ${rName}-Avtobus Ma'lumotlari
+        </span>
+        <button onclick="document.getElementById('bus-info-card-left').style.display='none'" style="background:none; border:none; color:#ff5252; font-size:18px; cursor:pointer; font-weight:bold;">&times;</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; line-height:1.4;">
+        <div><span style="color:rgba(255,255,255,0.6);">🚍 Davlat Raqami:</span> <b style="color:#fff;">${govNo}</b></div>
+        <div><span style="color:rgba(255,255,255,0.6);">⚡ Hozirgi Tezlik:</span> <b style="color:#00e5ff;">${speed} km/h</b></div>
+        <div><span style="color:rgba(255,255,255,0.6);">📍 Kioskgacha Masofa:</span> <b style="color:#00ff88;">${distStr}</b></div>
+        <div><span style="color:rgba(255,255,255,0.6);">⏱️ Taxminiy Kelish:</span> <b style="color:#ffcc00;">${etaStr}</b></div>
+      </div>
+    `;
+
+    // AUTOMATICALLY draw GPS Polyline Route Line on map immediately!
+    if (rName && rName !== 'GPS' && this.selectedBusRouteNo !== String(rName)) {
+      this.updateLeafletRoute(`${rName}-Avtobus`, v);
+    }
   }
 }
 

@@ -401,7 +401,11 @@ export function speakGeminiStream(text, voiceName = "Aoede") {
     function checkFinished() {
       if (streamDone && !isPlaying && audioQueue.length === 0) {
         console.log(`🏁 TTS playback tugadi: ${chunksPlayed} chunk o'ynaldi`);
-        resolve();
+        if (chunksPlayed === 0 && totalExpected > 0) {
+          reject(new Error("Barcha TTS chunklarda xatolik yuz berdi"));
+        } else {
+          resolve();
+        }
       }
     }
 
@@ -462,13 +466,8 @@ export async function speakText(text, language = "uz") {
     console.log("🔊 Gemini SSE Streaming TTS ishga tushiraman...");
     await speakGeminiStream(ttsText, "Aoede");
   } catch (err) {
-    console.warn("⚠️ Gemini SSE Streaming Failed, trying single Gemini:", err);
-    // Oxirgi chora: Single Gemini TTS
-    const success = await speakGemini(ttsText, "Aoede");
-    if (!success) {
-      console.warn("⚠️ Gemini Single TTS Failed, using browser fallback for UZ.");
-      fallbackSpeech(ttsText, "uz-UZ");
-    }
+    console.warn("⚠️ Gemini SSE Streaming Failed, using browser fallback for UZ:", err);
+    fallbackSpeech(ttsText, "uz-UZ");
   }
 }
 

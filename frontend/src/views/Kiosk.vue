@@ -213,6 +213,8 @@ const hideModal = (e) => {
       <!-- Markaz: Xarita -->
       <div id="map-canvas-container">
         <canvas id="map-canvas"></canvas>
+        <div id="leaflet-bus-map" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; border-radius:12px; overflow:hidden;"></div>
+        <div id="bus-info-card-left" style="display:none; position:absolute; top:70px; left:20px; width:300px; background:rgba(15,23,42,0.95); backdrop-filter:blur(12px); border:1.5px solid #00e5ff; border-radius:14px; padding:16px; color:#fff; z-index:1000; box-shadow:0 10px 30px rgba(0,0,0,0.6);"></div>
       </div>
 
       <!-- O'ng panel: Darvozalar -->

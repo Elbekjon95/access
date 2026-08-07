@@ -16,6 +16,9 @@ import os from 'os';
 
 const upload = multer({ dest: os.tmpdir() });
 
+const ttsCache = new Map();
+const MAX_TTS_CACHE_SIZE = 100;
+
 const router = express.Router();
 
 // Airports local cache map
@@ -517,6 +520,209 @@ router.get(['/destination_cities.php', '/destination_cities'], async (req, res) 
     }
 });
 
+// Tashbus Integration & Fallback Data
+let tashbusToken = null;
+let tashbusTokenExpiry = 0;
+
+async function getTashbusToken() {
+    if (tashbusToken && Date.now() < tashbusTokenExpiry) {
+        return tashbusToken;
+    }
+    const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
+    const username = process.env.TASHBUS_USERNAME || 'hackathon';
+    const password = process.env.TASHBUS_PASSWORD || 'H@cK@t0#';
+
+    try {
+        const { data } = await axios.post(`${tashbusUrl}/api/v1/auth/login`, { username, password }, { timeout: 5000 });
+        const token = data?.data?.accessToken || data?.accessToken;
+        if (token) {
+            tashbusToken = token;
+            tashbusTokenExpiry = Date.now() + 1000 * 60 * 30;
+            return token;
+        }
+    } catch(e) {
+        console.warn('Tashbus live auth failed, using local bus dataset:', e.message);
+    }
+    return null;
+}
+
+let localBusData = null;
+function getLocalBusData() {
+    if (!localBusData) {
+        try {
+            const busPath = path.resolve('data/bus_data.json');
+            if (fs.existsSync(busPath)) {
+                localBusData = JSON.parse(fs.readFileSync(busPath, 'utf8'));
+            }
+        } catch(e) {
+            console.error('Local bus data load error:', e.message);
+        }
+    }
+    return localBusData || { routes: [], vehicles: [] };
+}
+
+function normalizeRouteName(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/-?avtobus/gi, '')
+        .replace(/\u0422/g, 'T')
+        .replace(/\u0442/g, 't')
+        .replace(/[^\w]/g, '')
+        .toLowerCase();
+}
+
+// GET /api/bus/routes (Route points and polylines)
+router.get(['/bus/routes.php', '/bus/routes'], async (req, res) => {
+    try {
+        const routeName = req.query.route || req.query.routeName;
+        const token = await getTashbusToken();
+        const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
+
+        if (token) {
+            try {
+                const { data } = await axios.get(`${tashbusUrl}/api/v2/routes/points`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 5000
+                });
+                let list = data?.data || data || [];
+                if (routeName) {
+                    const targetNorm = normalizeRouteName(routeName);
+                    let filtered = list.filter(r => 
+                        normalizeRouteName(r.routeName) === targetNorm || 
+                        normalizeRouteName(r.routeId) === targetNorm
+                    );
+                    if (filtered.length > 0) list = filtered;
+                }
+                return res.json({ success: true, source: 'live', data: list });
+            } catch(e) {
+                console.warn('Tashbus live routes failed, using fallback:', e.message);
+            }
+        }
+
+        const local = getLocalBusData();
+        let list = local.routes || [];
+        if (routeName) {
+            const targetNorm = normalizeRouteName(routeName);
+            let filtered = list.filter(r => 
+                normalizeRouteName(r.routeName) === targetNorm || 
+                normalizeRouteName(r.routeId) === targetNorm
+            );
+
+            if (filtered.length === 0) {
+                const numOnly = targetNorm.match(/\d+/)?.[0];
+                if (numOnly) {
+                    filtered = list.filter(r => normalizeRouteName(r.routeName) === numOnly);
+                }
+            }
+
+            list = filtered;
+        }
+        res.json({ success: true, source: 'local', data: list });
+    } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/bus/vehicles (Live vehicle positions)
+router.get(['/bus/vehicles.php', '/bus/vehicles'], async (req, res) => {
+    try {
+        const routeName = req.query.route || req.query.routeName;
+        const token = await getTashbusToken();
+        const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
+
+        if (token) {
+            try {
+                const { data } = await axios.get(`${tashbusUrl}/api/v2/vehicles/tracking`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 5000
+                });
+                let list = data?.data || data || [];
+                if (routeName) {
+                    const targetNorm = normalizeRouteName(routeName);
+                    list = list.filter(v => normalizeRouteName(v.routeName) === targetNorm || normalizeRouteName(v.routeId) === targetNorm);
+                }
+                return res.json({ success: true, source: 'live', data: list });
+            } catch(e) {
+                console.warn('Tashbus live vehicles failed, using fallback:', e.message);
+            }
+        }
+
+        const local = getLocalBusData();
+        let list = local.vehicles || [];
+        if (routeName) {
+            const targetNorm = normalizeRouteName(routeName);
+            list = list.filter(v => normalizeRouteName(v.routeName) === targetNorm || normalizeRouteName(v.routeId) === targetNorm);
+        }
+        res.json({ success: true, source: 'local', data: list });
+    } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/bus/nearby (Nearby live buses based on lat/lng)
+router.get(['/bus/nearby.php', '/bus/nearby'], async (req, res) => {
+    try {
+        const kioskLat = parseFloat(req.query.lat) || 41.2917;
+        const kioskLng = parseFloat(req.query.lng) || 69.2844;
+        const maxDistKm = parseFloat(req.query.radius) || 2.5;
+
+        const token = await getTashbusToken();
+        const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
+        let vehiclesList = [];
+
+        if (token) {
+            try {
+                const { data } = await axios.get(`${tashbusUrl}/api/v1/vehicles/current/position`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 5000
+                });
+                vehiclesList = data?.data || data || [];
+            } catch(e) {
+                console.warn('Tashbus live nearby vehicles failed, using fallback:', e.message);
+            }
+        }
+
+        if (!vehiclesList || vehiclesList.length === 0) {
+            const local = getLocalBusData();
+            vehiclesList = local.vehicles || [];
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        const nearby = vehiclesList
+            .filter(v => v.loc && v.loc.lat && v.loc.lng)
+            .map(v => {
+                const distKm = haversine(kioskLat, kioskLng, v.loc.lat, v.loc.lng);
+                const etaMin = Math.max(1, Math.round((distKm / 20) * 60));
+                return {
+                    ...v,
+                    distanceKm: parseFloat(distKm.toFixed(2)),
+                    distanceMeters: Math.round(distKm * 1000),
+                    etaMin
+                };
+            })
+            .filter(v => v.distanceKm <= maxDistKm)
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+        res.json({
+            success: true,
+            kioskPos: { lat: kioskLat, lng: kioskLng },
+            totalNearby: nearby.length,
+            data: nearby
+        });
+    } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 router.post(['/capture.php', '/capture'], async (req, res) => {
     try {
         const { image } = req.body;
@@ -616,8 +822,16 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
 
 export default router;
 
-async function synthesizeGeminiTTS(text, voiceName, apiKey) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+async function synthesizeGeminiTTS(text, voiceName, apiKey, retries = 1) {
+    if (!text || !text.trim()) return null;
+    const cacheKey = `${text.trim()}_${voiceName}`;
+    if (ttsCache.has(cacheKey)) {
+        console.log(`[TTS Cache] Cache hit: "${text.trim().substring(0, 30)}..."`);
+        return ttsCache.get(cacheKey);
+    }
+
+    const ttsModel = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`;
     const payload = {
         contents: [{ parts: [{ text }] }],
         generationConfig: {
@@ -629,33 +843,42 @@ async function synthesizeGeminiTTS(text, voiceName, apiKey) {
             }
         }
     };
-    try {
-        const { data } = await axios.post(url, payload);
-        const pcmBase64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!pcmBase64) return null;
-        
-        const pcmBuffer = Buffer.from(pcmBase64, 'base64');
-        const sampleRate = 24000;
-        const wavHeader = Buffer.alloc(44);
-        wavHeader.write('RIFF', 0);
-        wavHeader.writeUInt32LE(pcmBuffer.length + 36, 4);
-        wavHeader.write('WAVE', 8);
-        wavHeader.write('fmt ', 12);
-        wavHeader.writeUInt32LE(16, 16);
-        wavHeader.writeUInt16LE(1, 20);
-        wavHeader.writeUInt16LE(1, 22);
-        wavHeader.writeUInt32LE(sampleRate, 24);
-        wavHeader.writeUInt32LE(sampleRate * 2, 28);
-        wavHeader.writeUInt16LE(2, 32);
-        wavHeader.writeUInt16LE(16, 34);
-        wavHeader.write('data', 36);
-        wavHeader.writeUInt32LE(pcmBuffer.length, 40);
-        
-        return Buffer.concat([wavHeader, pcmBuffer]);
-    } catch (e) {
-        console.error("TTS synth err:", e?.response?.data || e.message);
-        return null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const { data } = await axios.post(url, payload);
+            const pcmBase64 = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+            if (pcmBase64) {
+                const pcmBuffer = Buffer.from(pcmBase64, 'base64');
+                const sampleRate = 24000;
+                const wavHeader = Buffer.alloc(44);
+                wavHeader.write('RIFF', 0);
+                wavHeader.writeUInt32LE(pcmBuffer.length + 36, 4);
+                wavHeader.write('WAVE', 8);
+                wavHeader.write('fmt ', 12);
+                wavHeader.writeUInt32LE(16, 16);
+                wavHeader.writeUInt16LE(1, 20);
+                wavHeader.writeUInt16LE(1, 22);
+                wavHeader.writeUInt32LE(sampleRate, 24);
+                wavHeader.writeUInt32LE(sampleRate * 2, 28);
+                wavHeader.writeUInt16LE(2, 32);
+                wavHeader.writeUInt16LE(16, 34);
+                wavHeader.write('data', 36);
+                wavHeader.writeUInt32LE(pcmBuffer.length, 40);
+                
+                const resultBuffer = Buffer.concat([wavHeader, pcmBuffer]);
+                if (ttsCache.size >= MAX_TTS_CACHE_SIZE) {
+                    const firstKey = ttsCache.keys().next().value;
+                    ttsCache.delete(firstKey);
+                }
+                ttsCache.set(cacheKey, resultBuffer);
+                return resultBuffer;
+            }
+        } catch (e) {
+            console.error(`TTS synth attempt ${attempt} err:`, e?.response?.data || e.message);
+            if (attempt < retries) await new Promise(r => setTimeout(r, 300));
+        }
     }
+    return null;
 }
 
 router.post(['/gemini_voice.php', '/gemini_voice'], async (req, res) => {
@@ -695,15 +918,14 @@ router.post(['/gemini_stream_tts.php', '/gemini_stream_tts'], async (req, res) =
             return;
         }
 
-        // Matnni gaplarga bo'lish
+        // Matnni gaplarga bo'lish (150+ belgidan iborat bloklarga birlashtirish)
         const rawSentences = text.split(/(?<=[.!?;])\s+/);
         const sentences = [];
         
-        // Juda qisqa gaplarni birlashtirish (tezlikni oshirish uchun)
         let currentChunk = "";
         for (const s of rawSentences) {
             currentChunk += (currentChunk ? " " : "") + s;
-            if (currentChunk.length > 40 || s.match(/[.!?;]$/)) {
+            if (currentChunk.length >= 150) {
                 sentences.push(currentChunk);
                 currentChunk = "";
             }
