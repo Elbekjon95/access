@@ -37,3 +37,6 @@ database_pg.sql
 project.tar
 scratch/
 
+# Camera captures (auto-generated)
+frontend/public/img/captures/
+
