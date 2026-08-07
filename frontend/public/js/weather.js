@@ -13,7 +13,7 @@ export async function initWeather() {
     if (!tempDisplay || !weatherBtn) return;
 
     try {
-        const res = await fetch('api/weather?city=Tashkent');
+        const res = await fetch('/api/weather?city=Tashkent');
         const data = await res.json();
         if (data && data.success) {
             tempDisplay.textContent = Math.round(data.data.temp) + "°C";
@@ -28,7 +28,7 @@ export async function initWeather() {
         weatherGrid.innerHTML = '<div class="loader-container" style="grid-column: 1/-1; text-align: center; padding: 3rem;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><p style="margin-top: 1rem;">Shaharlar qidirilmoqda...</p></div>';
 
         try {
-            const mapRes = await fetch('api/destination_cities');
+            const mapRes = await fetch('/api/destination_cities');
             const mapData = await mapRes.json();
             if (mapData && mapData.cities && mapData.cities.length > 0) {
                 weatherCitiesCache = mapData.cities;
@@ -61,7 +61,7 @@ async function loadNextWeatherChunk() {
 
     try {
         const citiesStr = chunk.join(',');
-        const weatherRes = await fetch(`api/weather?cities=${citiesStr}`);
+        const weatherRes = await fetch(`/api/weather?cities=${citiesStr}`);
         const weatherData = await weatherRes.json();
         
         loader.remove();

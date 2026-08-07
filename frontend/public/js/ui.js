@@ -149,7 +149,7 @@ export async function loadFlightsToTable(filterType = "departure") {
   try {
     let flights = cachedFlightsData;
     if (!flights || cachedTransportMode !== mode) {
-      const response = await fetch(`api/flights?mode=${mode}`);
+      const response = await fetch(`/api/flights?mode=${mode}`);
       flights = await response.json();
       cachedFlightsData = flights;
       cachedTransportMode = mode;

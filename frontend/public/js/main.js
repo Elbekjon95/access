@@ -379,7 +379,7 @@ async function loadNearbyBusesToPanel(container) {
     try {
         const kioskLat = 41.2917;
         const kioskLng = 69.2844;
-        const res = await fetch(`api/bus/nearby?lat=${kioskLat}&lng=${kioskLng}&radius=2.5`).then(r => r.json());
+        const res = await fetch(`/api/bus/nearby?lat=${kioskLat}&lng=${kioskLng}&radius=2.5`).then(r => r.json());
 
         if (res.success && res.data && res.data.length > 0) {
             container.innerHTML = "";
@@ -435,7 +435,7 @@ async function loadAllBusRoutesToPanel(container) {
 
     try {
         if (allBusRoutesList.length === 0) {
-            const res = await fetch('api/bus/routes').then(r => r.json());
+            const res = await fetch('/api/bus/routes').then(r => r.json());
             if (res.success && res.data) {
                 const map = new Map();
                 res.data.forEach(r => {

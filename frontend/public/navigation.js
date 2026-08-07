@@ -798,8 +798,8 @@ class AirportNavigation {
 
     try {
       const [rRes, vRes] = await Promise.all([
-        fetch(`api/bus/routes?route=${routeNo}`).then(res => res.json()),
-        fetch(`api/bus/vehicles?route=${routeNo}`).then(res => res.json())
+        fetch(`/api/bus/routes?route=${routeNo}`).then(res => res.json()),
+        fetch(`/api/bus/vehicles?route=${routeNo}`).then(res => res.json())
       ]);
 
       // 1. Draw Green (Borish) and Red (Qaytish) Polyline Lines via OSRM!
@@ -898,7 +898,7 @@ class AirportNavigation {
       }
 
       // 2. Render active buses + ALWAYS ensure buses are visible on the route!
-      const allVehiclesRes = await fetch('api/bus/vehicles').then(r => r.json()).catch(() => null);
+      const allVehiclesRes = await fetch('/api/bus/vehicles').then(r => r.json()).catch(() => null);
       let matchedVehicles = [];
 
       if (allVehiclesRes && allVehiclesRes.success && allVehiclesRes.data) {
@@ -998,7 +998,7 @@ class AirportNavigation {
 
     const fetchAndUpdateRoute = async () => {
       try {
-        const vRes = await fetch(`api/bus/vehicles?route=${routeNo}`).then(res => res.json()).catch(() => null);
+        const vRes = await fetch(`/api/bus/vehicles?route=${routeNo}`).then(res => res.json()).catch(() => null);
         const vehiclesList = (vRes && vRes.success && vRes.data && vRes.data.length > 0) ? [...vRes.data] : [];
         if (selectedVehicle) {
           const exists = vehiclesList.some(v => (v.trackerId && v.trackerId === selectedVehicle.trackerId) || (v.govNumber && v.govNumber === selectedVehicle.govNumber));
@@ -1181,7 +1181,7 @@ class AirportNavigation {
       const east = bounds.getEast();
 
       try {
-        const res = await fetch('api/bus/vehicles').then(r => r.json());
+        const res = await fetch('/api/bus/vehicles').then(r => r.json());
         if (res.success && res.data) {
           const currentTrackerIds = new Set();
 
