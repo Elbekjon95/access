@@ -205,8 +205,37 @@ function fetchRailwaySchedules() {
     ];
 }
 
-function fetchBusSchedules() {
-    return [
+let tashbusTokenCache = null;
+let tashbusTokenExpiry = 0;
+
+async function getTashbusToken() {
+    const baseUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
+    const username = process.env.TASHBUS_USERNAME || 'hackathon';
+    const password = process.env.TASHBUS_PASSWORD || 'H@cK@t0#';
+
+    if (tashbusTokenCache && Date.now() < tashbusTokenExpiry) {
+        return { baseUrl, token: tashbusTokenCache };
+    }
+
+    try {
+        const res = await axios.post(`${baseUrl}/api/v1/auth/login`, { username, password }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 5000
+        });
+        const token = res.data?.data?.accessToken || res.data?.accessToken || res.data?.token;
+        if (token) {
+            tashbusTokenCache = token;
+            tashbusTokenExpiry = Date.now() + 30 * 60 * 1000;
+            return { baseUrl, token };
+        }
+    } catch (e) {
+        console.warn('[Tashbus API Login Notice]:', e.response?.status || e.message);
+    }
+    return { baseUrl, token: null };
+}
+
+async function fetchBusSchedules() {
+    const fallbackBuses = [
         {
             type: 'departure', movement: 'DEPARTURE',
             from: 'Toshkent Central Avtovokzal', to: 'Samarqand (Markaziy)',
@@ -349,6 +378,36 @@ function fetchBusSchedules() {
             status: 'Qatnovda'
         }
     ];
+
+    try {
+        const { baseUrl, token } = await getTashbusToken();
+        if (token) {
+            const routesRes = await axios.get(`${baseUrl}/api/v2/routes/points`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                timeout: 5000
+            });
+            const routesList = routesRes.data?.data || routesRes.data;
+            if (Array.isArray(routesList) && routesList.length > 0) {
+                console.log(`[Tashbus API] Live routes fetched: ${routesList.length}`);
+                const liveSchedules = routesList.slice(0, 15).map(r => ({
+                    type: 'schedule',
+                    movement: 'SCHEDULE',
+                    from: 'Toshkent Central Avtovokzal',
+                    to: `Liniya №${r.routeName || r.routeId} (Tashbus Live)`,
+                    flight_no: `BUS-${r.routeName || r.routeId}`,
+                    time: 'Interval: 8-12 min (06:00 - 22:30)',
+                    gate: 'Bekat 1-6',
+                    checkin_counters: 'Shahar Liniyasi',
+                    status: 'Qatnovda'
+                }));
+                return [...fallbackBuses.filter(b => b.type !== 'schedule'), ...liveSchedules];
+            }
+        }
+    } catch (err) {
+        console.warn('[Tashbus API Fetch Notice]:', err.message);
+    }
+
+    return fallbackBuses;
 }
 
 const postChatHandler = async (req, res) => {
@@ -500,7 +559,8 @@ const getFlightsHandler = async (req, res) => {
         if (mode === 'railway') {
             return res.json(fetchRailwaySchedules());
         } else if (mode === 'bus') {
-            return res.json(fetchBusSchedules());
+            const busSchedules = await fetchBusSchedules();
+            return res.json(busSchedules);
         } else {
             const allFlights = await fetchLiveFlights();
             return res.json(allFlights);
