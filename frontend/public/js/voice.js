@@ -622,7 +622,7 @@ async function onRecordingStop() {
   if (assistantTextElement)
     assistantTextElement.innerText = "Tahlil qilyapman...";
   try {
-    const response = await fetch("api/stt", {
+    const response = await fetch("/api/stt", {
       method: "POST",
       body: formData,
     });

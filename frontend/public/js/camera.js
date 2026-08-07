@@ -207,7 +207,7 @@ export async function autoCapture(force = false) {
       console.warn("Capture frame deyarli qora, baribir yuborilmoqda");
     }
 
-    const res = await fetch("api/capture", {
+    const res = await fetch("/api/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: frame.imageData }),

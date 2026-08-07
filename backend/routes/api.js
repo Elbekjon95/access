@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import Chat from '../models/Chat.js';
-import Map from '../models/Map.js';
+import MapModel from '../models/Map.js';
 import MapPoint from '../models/MapPoint.js';
 import MapBarrier from '../models/MapBarrier.js';
 import CustomerCapture from '../models/CustomerCapture.js';
@@ -475,7 +475,7 @@ router.get('/flights.php', getFlightsHandler);
 // Missing Map endpoints
 const getMapSettingsHandler = async (req, res) => {
     try {
-        const mapDoc = await Map.findOne();
+        const mapDoc = await MapModel.findOne();
         res.json({ path: mapDoc ? mapDoc.image_path : 'img/airport_map.jpg' });
     } catch(err) {
         res.json({ path: 'img/airport_map.jpg' });

@@ -109,7 +109,7 @@ export async function getFlightsListCached() {
     return flightsCache;
   }
   try {
-    const res = await fetch("api/flights");
+    const res = await fetch("/api/flights");
     flightsCache = await res.json();
     lastCacheTime = now;
     return flightsCache;
@@ -428,7 +428,7 @@ export async function sendMessage(message) {
   try {
     const lang = getSelectedLanguage();
     const mode = state.transportMode || "aviation";
-    const response = await fetch("api/chat", {
+    const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: message, language: lang, transportMode: mode }),
@@ -557,7 +557,7 @@ export async function submitVoiceComplaint(blob) {
 
   setComplaintStatus("Shikoyat yuborilmoqda...");
   try {
-    const res = await fetch("api/complaint", {
+    const res = await fetch("/api/complaint", {
       method: "POST",
       body: formData,
     });
