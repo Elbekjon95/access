@@ -398,7 +398,19 @@ ${JSON.stringify(shortFlights)}`;
         const payload = {
             contents: [{ parts: [{ text: sysInstruction }] }],
             generationConfig: {
-                responseMimeType: "application/json"
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        reply: { type: "STRING" },
+                        show_earth_route: { type: "BOOLEAN" },
+                        origin: { type: "STRING", nullable: true },
+                        destination: { type: "STRING", nullable: true },
+                        location: { type: "STRING", nullable: true },
+                        bus_route_name: { type: "STRING", nullable: true }
+                    },
+                    required: ["reply", "show_earth_route"]
+                }
             }
         };
 
