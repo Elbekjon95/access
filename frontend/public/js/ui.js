@@ -126,7 +126,7 @@ export function clearFlightsCache() {
 }
 window.clearFlightsCache = clearFlightsCache;
 
-export async function loadFlightsToTable(filterType = "departure") {
+export async function loadFlightsToTable(filterType = "departure", forceRefresh = false) {
   const tbody = document.getElementById("flights-body");
   if (!tbody) return;
   tbody.innerHTML =
@@ -152,7 +152,7 @@ export async function loadFlightsToTable(filterType = "departure") {
 
   try {
     let flights = cachedFlightsData;
-    if (!flights || cachedTransportMode !== mode) {
+    if (!flights || cachedTransportMode !== mode || forceRefresh) {
       const response = await fetch(`/api/flights?mode=${mode}`);
       flights = await response.json();
       cachedFlightsData = flights;
@@ -255,10 +255,12 @@ export function initFlightsTabs() {
 
   tabBtns.forEach((btn) => {
     btn.addEventListener("click", (e) => {
+      const targetBtn = e.currentTarget || e.target.closest(".flight-tab-btn");
+      if (!targetBtn) return;
       tabBtns.forEach((b) => b.classList.remove("active"));
-      e.target.classList.add("active");
-      const type = e.target.getAttribute("data-type") || "departure";
-      loadFlightsToTable(type);
+      targetBtn.classList.add("active");
+      const type = targetBtn.getAttribute("data-type") || "departure";
+      loadFlightsToTable(type, true);
     });
   });
 }
