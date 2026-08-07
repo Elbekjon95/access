@@ -214,7 +214,7 @@ async function getTashbusToken() {
     const password = process.env.TASHBUS_PASSWORD || 'H@cK@t0#';
 
     if (tashbusTokenCache && Date.now() < tashbusTokenExpiry) {
-        return { baseUrl, token: tashbusTokenCache };
+        return tashbusTokenCache;
     }
 
     try {
@@ -226,15 +226,16 @@ async function getTashbusToken() {
         if (token) {
             tashbusTokenCache = token;
             tashbusTokenExpiry = Date.now() + 30 * 60 * 1000;
-            return { baseUrl, token };
+            return token;
         }
     } catch (e) {
         console.warn('[Tashbus API Login Notice]:', e.response?.status || e.message);
     }
-    return { baseUrl, token: null };
+    return null;
 }
 
 async function fetchBusSchedules() {
+    const baseUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
     const fallbackBuses = [
         {
             type: 'departure', movement: 'DEPARTURE',
@@ -380,7 +381,7 @@ async function fetchBusSchedules() {
     ];
 
     try {
-        const { baseUrl, token } = await getTashbusToken();
+        const token = await getTashbusToken();
         if (token) {
             const routesRes = await axios.get(`${baseUrl}/api/v2/routes/points`, {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -665,31 +666,7 @@ const getDestinationCitiesHandler = async (req, res) => {
 router.get('/destination_cities', getDestinationCitiesHandler);
 router.get('/destination_cities.php', getDestinationCitiesHandler);
 
-// Tashbus Integration & Fallback Data
-let tashbusToken = null;
-let tashbusTokenExpiry = 0;
-
-async function getTashbusToken() {
-    if (tashbusToken && Date.now() < tashbusTokenExpiry) {
-        return tashbusToken;
-    }
-    const tashbusUrl = process.env.TASHBUS_URL || 'https://bmapi.dtransport.uz';
-    const username = process.env.TASHBUS_USERNAME || 'hackathon';
-    const password = process.env.TASHBUS_PASSWORD || 'H@cK@t0#';
-
-    try {
-        const { data } = await axios.post(`${tashbusUrl}/api/v1/auth/login`, { username, password }, { timeout: 5000 });
-        const token = data?.data?.accessToken || data?.accessToken;
-        if (token) {
-            tashbusToken = token;
-            tashbusTokenExpiry = Date.now() + 1000 * 60 * 30;
-            return token;
-        }
-    } catch(e) {
-        console.warn('Tashbus live auth failed, using local bus dataset:', e.message);
-    }
-    return null;
-}
+// Local Bus Fallback Data
 
 let localBusData = null;
 function getLocalBusData() {
