@@ -32,7 +32,7 @@ try {
     }
 } catch (e) { console.error('airports.json topilmadi', e.message); }
 
-router.all(['/airport_coords.php', '/airport_coords'], async (req, res) => {
+const getAirportCoordsHandler = async (req, res) => {
     try {
         let codes = req.method === 'POST' ? (req.body.codes || []) : (req.query.codes || '').split(',').filter(Boolean);
         codes = [...new Set(codes.map(c => c.trim().toUpperCase()).filter(c => c.length === 3))];
@@ -48,7 +48,10 @@ router.all(['/airport_coords.php', '/airport_coords'], async (req, res) => {
     } catch(e) {
         res.status(500).json({ error: e.message });
     }
-});
+};
+
+router.all('/airport_coords', getAirportCoordsHandler);
+router.all('/airport_coords.php', getAirportCoordsHandler);
 
 async function fetchLiveFlights() {
     const types = ['DEPARTURE', 'ARRIVAL'];
@@ -304,8 +307,7 @@ function fetchBusSchedules() {
     ];
 }
 
-// Chat Endpoint
-router.post(['/chat.php', '/chat'], async (req, res) => {
+const postChatHandler = async (req, res) => {
     try {
         const { message, language, transportMode = 'aviation' } = req.body;
         if (!message) return res.status(400).json({ error: 'Xabar yuborilmadi' });
@@ -326,22 +328,10 @@ router.post(['/chat.php', '/chat'], async (req, res) => {
         
         // Toshkent vaqtini olish
         const now = new Date();
-        const tasTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tashkent"}));
-        const nowMin = tasTime.getHours() * 60 + tasTime.getMinutes();
+        const tashkentTimeStr = now.toLocaleTimeString('uz-UZ', { timeZone: 'Asia/Tashkent', hour12: false });
+        const tashkentDateStr = now.toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' });
 
-        // Reyslarni vaqt bo'yicha saralash
-        const sortedFlights = flights
-            .filter(f => {
-                try {
-                    const [h, m] = f.time.split(':').map(Number);
-                    const fMin = h * 60 + m;
-                    let diff = fMin - nowMin;
-                    if (diff < -120) diff += 1440;
-                    return true;
-                } catch (e) { return true; }
-            });
-
-        const shortFlights = sortedFlights.slice(0, 80);
+        const shortFlights = flights.slice(0, 50);
         
         let knowledgeBase = "";
         try {
@@ -424,10 +414,13 @@ ${JSON.stringify(shortFlights)}`;
         }
         res.json({ reply: fallbackMsg });
     }
-});
+};
+
+router.post('/chat', postChatHandler);
+router.post('/chat.php', postChatHandler);
 
 // Flights / Schedules Scraping Endpoint
-router.get(['/flights.php', '/flights'], async (req, res) => {
+const getFlightsHandler = async (req, res) => {
     try {
         const mode = req.query.mode || 'aviation';
         if (mode === 'railway') {
@@ -442,28 +435,37 @@ router.get(['/flights.php', '/flights'], async (req, res) => {
         console.error('Scraping error:', error);
         res.status(500).json({ error: 'Server xatosi' });
     }
-});
+};
+
+router.get('/flights', getFlightsHandler);
+router.get('/flights.php', getFlightsHandler);
 
 // Missing Map endpoints
-router.get(['/map_settings.php', '/map_settings'], async (req, res) => {
+const getMapSettingsHandler = async (req, res) => {
     try {
         const mapDoc = await Map.findOne();
         res.json({ path: mapDoc ? mapDoc.image_path : 'img/airport_map.jpg' });
     } catch(err) {
         res.json({ path: 'img/airport_map.jpg' });
     }
-});
+};
 
-router.get(['/scanner.php', '/scanner'], async (req, res) => {
+router.get('/map_settings', getMapSettingsHandler);
+router.get('/map_settings.php', getMapSettingsHandler);
+
+const getScannerHandler = async (req, res) => {
     try {
         const points = await MapPoint.find();
         res.json(points);
     } catch(err) {
         res.json([]);
     }
-});
+};
 
-router.get(['/barriers.php', '/barriers'], async (req, res) => {
+router.get('/scanner', getScannerHandler);
+router.get('/scanner.php', getScannerHandler);
+
+const getBarriersHandler = async (req, res) => {
     try {
         const rows = await MapBarrier.find();
         const barriers = rows.map(b => ({
@@ -474,9 +476,12 @@ router.get(['/barriers.php', '/barriers'], async (req, res) => {
     } catch(err) {
         res.json([]);
     }
-});
+};
 
-router.get(['/weather.php', '/weather'], async (req, res) => {
+router.get('/barriers', getBarriersHandler);
+router.get('/barriers.php', getBarriersHandler);
+
+const getWeatherHandler = async (req, res) => {
     try {
         if (req.query.cities) {
             const cities = req.query.cities.split(',');
@@ -499,9 +504,12 @@ router.get(['/weather.php', '/weather'], async (req, res) => {
     } catch(err) {
         res.json({ success: false, error: 'Weather err' });
     }
-});
+};
 
-router.get(['/destination_cities.php', '/destination_cities'], async (req, res) => {
+router.get('/weather', getWeatherHandler);
+router.get('/weather.php', getWeatherHandler);
+
+const getDestinationCitiesHandler = async (req, res) => {
     try {
         const { data } = await axios.get("https://bot.uzairports.com/fids/schedule?airport=TAS2&flight_type=DEPARTURE", { headers: { "User-Agent": "Mozilla/5.0" } });
         const $ = cheerio.load(data);
@@ -518,7 +526,10 @@ router.get(['/destination_cities.php', '/destination_cities'], async (req, res) 
     } catch(err) {
         res.json({ success: false, cities: [] });
     }
-});
+};
+
+router.get('/destination_cities', getDestinationCitiesHandler);
+router.get('/destination_cities.php', getDestinationCitiesHandler);
 
 // Tashbus Integration & Fallback Data
 let tashbusToken = null;
@@ -732,7 +743,7 @@ const getBusNearbyHandler = async (req, res) => {
 router.get('/bus/nearby', getBusNearbyHandler);
 router.get('/bus/nearby.php', getBusNearbyHandler);
 
-router.post(['/capture.php', '/capture'], async (req, res) => {
+const postCaptureHandler = async (req, res) => {
     try {
         const { image } = req.body;
         if (!image) return res.status(400).json({ status: 'error', message: 'No image data received' });
@@ -754,9 +765,12 @@ router.post(['/capture.php', '/capture'], async (req, res) => {
         console.error(err);
         res.status(500).json({ status: 'error', message: err.message });
     }
-});
+};
 
-router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
+router.post('/capture', postCaptureHandler);
+router.post('/capture.php', postCaptureHandler);
+
+const postSttHandler = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Audio fayl yuborilmadi' });
@@ -827,9 +841,10 @@ router.post(['/stt.php', '/stt'], upload.single('audio'), async (req, res) => {
         const errorDetails = err.response?.data?.error?.message || err.message || 'Gemini STT xizmatida xatolik yuz berdi.';
         res.json({ error: errorDetails });
     }
-});
+};
 
-export default router;
+router.post('/stt', upload.single('audio'), postSttHandler);
+router.post('/stt.php', upload.single('audio'), postSttHandler);
 
 async function synthesizeGeminiTTS(text, voiceName, apiKey, retries = 1) {
     if (!text || !text.trim()) return null;
@@ -890,7 +905,7 @@ async function synthesizeGeminiTTS(text, voiceName, apiKey, retries = 1) {
     return null;
 }
 
-router.post(['/gemini_voice.php', '/gemini_voice'], async (req, res) => {
+const postGeminiVoiceHandler = async (req, res) => {
     try {
         const { text, voice_name = 'Aoede' } = req.body;
         const apiKey = process.env.GEMINI_API_KEY;
@@ -910,9 +925,12 @@ router.post(['/gemini_voice.php', '/gemini_voice'], async (req, res) => {
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
-});
+};
 
-router.post(['/gemini_stream_tts.php', '/gemini_stream_tts'], async (req, res) => {
+router.post('/gemini_voice', postGeminiVoiceHandler);
+router.post('/gemini_voice.php', postGeminiVoiceHandler);
+
+const postGeminiStreamTtsHandler = async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -961,4 +979,9 @@ router.post(['/gemini_stream_tts.php', '/gemini_stream_tts'], async (req, res) =
         res.write(`event: error\ndata: {"message": "${e.message}"}\n\n`);
         res.end();
     }
-});
+};
+
+router.post('/gemini_stream_tts', postGeminiStreamTtsHandler);
+router.post('/gemini_stream_tts.php', postGeminiStreamTtsHandler);
+
+export default router;
